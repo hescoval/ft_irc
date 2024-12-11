@@ -36,16 +36,27 @@ void Server::setupSocket()
 		throw std::runtime_error("Couldn't set socket options");
 	}
 
-    
     // Set socket to non-blocking mode
     if (fcntl(this->_socketfd, F_SETFL, O_NONBLOCK) == -1)
 	{
 		close(this->_socketfd);
 		throw std::runtime_error("Couldn't set socket to non-blocking mode");
 	}
+    setupIPV4();
+}
 
+void Server::setupIPV4()
+{
+    // Allows the server to accept connections on any of the host's IP addresses.
     this->_ipV4.sin_addr.s_addr = INADDR_ANY;
+
+    // This constant specifies the address family for the socket. In this case the IPv4 protocol.
     this->_ipV4.sin_family = AF_INET;
+
+    /*
+        Converts SERVER_PORT from host byte order to network byte order (big-endian).
+        Network protocols expect multi-byte values to be transmitted in a specific order.
+    */
     this->_ipV4.sin_port = htons(SERVER_PORT);
 
 
@@ -63,11 +74,6 @@ void Server::setupSocket()
 		throw std::runtime_error("Cannot listen on socket");
 	}
 
-    setupIPV4();
-}
-
-void Server::setupIPV4()
-{
     pollfd server_fd = {this->_socketfd, POLLIN, 0};
     _fds.push_back(server_fd);
 
@@ -88,7 +94,6 @@ void Server::setupIPV4()
 */
 void Server::mainServerLoop()
 {
-    cout << GREEN "DAvi is mamaing" RESET << endl;
     while(true)
     {
         if (poll(_fds.data(), _fds.size(), -1) == -1)
