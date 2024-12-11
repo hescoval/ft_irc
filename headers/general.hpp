@@ -72,3 +72,4 @@ using std::endl;
 void trim(std::string &test);
 void replace_whitespace(string &input);
 void remove_consecutives(string &str, char to_remove);
+std::vector<string> split(string str, string delims);
