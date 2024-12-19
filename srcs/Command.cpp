@@ -3,10 +3,17 @@
 Command::Command(string input)
 {
     this->full_command = input;
-    parse_input();
+    std::vector<string> splits = split(input, " ");
+    this->command = splits[0];
+
+    for(size_t i = 1; i < splits.size(); i++)
+        args.push_back(splits[i]);
+
+    has_flags = false;
+    has_target = false;
 }
 
-void Command::parse_input()
+Command::~Command()
 {
     return;
 }

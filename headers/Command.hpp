@@ -6,9 +6,9 @@ class Command
         string  full_command;
         bool    has_target;
         bool    has_flags;
-        void    parse_input();
 
     public:
+        string  command;
         std::vector<string> args;
         std::vector<char> modes_to_add;
         std::vector<char> modes_to_remove;

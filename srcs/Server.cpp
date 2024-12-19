@@ -1,14 +1,12 @@
 #include "../headers/Server.hpp"
 
-typedef std::vector<pollfd>::iterator _fdIT;
-typedef std::map<int, Client*>::iterator _clientIT;
-
 Server::~Server(){}
 
 Server::Server(string port, string password) : _Clients()
 {
+
     if(atoi(port.c_str()) != SERVER_PORT || port.length() != 4)
-        throw std::runtime_error("Incorrect port number 6697");
+        throw std::runtime_error("Incorrect port number, try " + toString(SERVER_PORT));
 
     this->_password = password;
     this->_clientMax = MAX_CLIENTS;
@@ -55,7 +53,6 @@ void Server::setupIPV4()
         Network protocols expect multi-byte values to be transmitted in a specific order.
     */
     this->_ipV4.sin_port = htons(SERVER_PORT);
-
 
     // Bind the socket to the address
     if (bind(this->_socketfd, (struct sockaddr *)&_ipV4, sizeof(_ipV4)) == -1)
@@ -106,6 +103,7 @@ void Server::mainServerLoop()
                     checkClientRequest(it->fd);
                 break;
             }
+
             if (it->revents & POLLHUP)
             {
                 disconnect(it->fd);
@@ -127,14 +125,10 @@ void Server::disconnect(int fd)
         _Clients.erase(it);
     }
 
-    for(_fdIT it = _fds.begin(); it != _fds.end(); ++it)
-    {
-        if (it->fd == fd)
-        {
-            _fds.erase(it);
-            return;
-        }
-    }
+    _fdIT poll = getUserPoll(fd);
+    if(poll != _fds.end())
+        _fds.erase(poll);
+
     cout << RED << "Client disconnected" << RESET << endl;
 }
 
@@ -184,6 +178,10 @@ void Server::checkClientRequest(int _fd)
             disconnect(_fd);
             return;
         }
+
+        std::vector<string> splits = split(message, "\r\n");
+        for(size_t i = 0; i < splits.size(); i++)
+            handleCMD(splits[i], _fd);
 	}
 	catch (const std::exception &e)
 	{
@@ -201,4 +199,73 @@ void Server::readfd(int fd, string& message, int& bytes_read)
 
 	message = string(buffer, bytes_read);
     cout << message << endl;
+}
+
+Client* Server::getClient(int fd)
+{
+    _clientIT it = _Clients.find(fd);
+    if(it != _Clients.end())
+        return it->second;
+    return NULL;
+}
+
+_fdIT Server::getUserPoll(int fd)
+{
+    _fdIT it = _fds.begin();
+    for(; it != _fds.end(); ++it)
+    {
+        if (it->fd == fd)
+        {
+            return it;
+        }
+    }
+    return _fds.end();
+}
+
+void Server::safely_leave(int fd)
+{
+    _fdIT userIT = getUserPoll(fd);
+    if(userIT != _fds.end())
+    {
+        _fds.erase(userIT);
+    }
+	close(fd);
+	disconnect(fd);
+}
+
+void Server::handleCMD(string message, int fd)
+{
+    std::vector<string> messagesplits = split(message, " ");
+
+    if(messagesplits.size() == 0)
+        return;
+    
+    Command input(message);
+    if(input.command == "QUIT")
+    {
+        safely_leave(fd);
+    }
+    cout << input.command<< endl;
+    if(input.command == "PASS")
+    {
+        cout << "herro" << endl;
+        PASS(input, fd);
+    }
+}
+
+void Server::PASS(Command input, int fd)
+{
+    string fullpass = "";
+    Client* client = getClient(fd);
+
+    for(size_t i = 0; i < input.args.size(); i++)
+        fullpass += input.args[i];
+
+    if(fullpass != this->_password)
+    {
+        string error =  client->getHostname() + ": errou foi mlk\r\n";
+        send(fd, error.c_str(), error.size(), 0);
+        safely_leave(fd);
+    }
+    return;
 }

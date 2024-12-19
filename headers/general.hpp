@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -58,4 +60,9 @@ void remove_consecutives(string &str, char to_remove);
 std::vector<string> split(string str, string delims);
 
 template<typename T>
-string toString(const T& value);
+string toString(const T& value)
+{
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}

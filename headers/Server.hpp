@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Command.hpp"
 #include "Client.hpp"
 #include "general.hpp"
 
@@ -13,12 +14,18 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+
+
 #define MAX_CLIENTS 10
 #define SERVER_NAME "42IRC"
 #define SERVER_PORT 6697
 #define EOM "\r\n"
 
 class Client;
+class Command;
+
+typedef std::vector<pollfd>::iterator _fdIT;
+typedef std::map<int, Client*>::iterator _clientIT;
 
 class Server
 {
@@ -43,6 +50,14 @@ class Server
         void    checkClientRequest(int _fd);
         void    readfd(int _fd, string& message, int& bytes_read);
         void    disconnect(int fd);
+        void    handleCMD(string message, int fd);
+        void    safely_leave(int fd);
+
+        _fdIT   getUserPoll(int fd);
+        Client* getClient(int fd);
+        /*######################## COMMANDS ##############################*/
+
+        void    PASS(Command nickname, int fd);
 
     public:
         Server(string port, string password);

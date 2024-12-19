@@ -39,27 +39,22 @@ void remove_consecutives(string &str, char to_remove)
 	}
 }
 
-std::vector<string> split(string str, string delims)
+std::vector<string> split(string str, string delim)
 {
-	std::vector<string> ret;
-	size_t start = 0;
-	size_t end = 0;
+    std::vector<string> ret;
+    size_t start = 0;
+    size_t end = 0;
 
-	while((end = str.find_first_of(delims, start)) != string::npos)
+    while ((end = str.find(delim, start)) != string::npos) 
 	{
-		if (end != start)
-			ret.push_back(str.substr(start, end - start));
-		start = end + 1;
-	}
-	if (start < str.size())
-		ret.push_back(str.substr(start));
-	return ret;	
-}
-
-template<typename T>
-string toString(const T& value)
-{
-    std::ostringstream oss;
-    oss << value;
-    return oss.str();
+        if (end != start) 
+		{
+            ret.push_back(str.substr(start, end - start));
+        }
+        start = end + delim.length();
+    }
+    if (start < str.size()) {
+        ret.push_back(str.substr(start));
+    }
+    return ret;
 }
