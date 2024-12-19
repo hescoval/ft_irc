@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <vector>
 #include <map>
+#include <sstream>
 
 /*
 	The using keyword is only forbidden if you use it for entire namespaces
@@ -51,25 +52,10 @@ using std::endl;
 # define BRIGHT_CYAN	"\e[96m"
 # define BRIGHT_WHITE	"\e[97m"
 
-# define BG_BLACK	"\e[40m"
-# define BG_RED		"\e[41m"
-# define BG_GREEN	"\e[42m"
-# define BG_YELLOW	"\e[43m"
-# define BG_BLUE	"\e[44m"
-# define BG_PURPLE	"\e[45m"
-# define BG_CYAN	"\e[46m"
-# define BG_WHITE	"\e[47m"
-
-# define BG_BRIGHT_BLACK	"\e[100m"
-# define BG_BRIGHT_RED		"\e[101m"
-# define BG_BRIGHT_GREEN	"\e[102m"
-# define BG_BRIGHT_YELLOW	"\e[103m"
-# define BG_BRIGHT_BLUE		"\e[104m"
-# define BG_BRIGHT_PURPLE	"\e[105m"
-# define BG_BRIGHT_CYAN		"\e[106m"
-# define BG_BRIGHT_WHITE	"\e[107m"
-
 void trim(std::string &test);
 void replace_whitespace(string &input);
 void remove_consecutives(string &str, char to_remove);
 std::vector<string> split(string str, string delims);
+
+template<typename T>
+string toString(const T& value);

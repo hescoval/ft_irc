@@ -55,3 +55,11 @@ std::vector<string> split(string str, string delims)
 		ret.push_back(str.substr(start));
 	return ret;	
 }
+
+template<typename T>
+string toString(const T& value)
+{
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}

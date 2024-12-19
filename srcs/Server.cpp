@@ -1,24 +1,21 @@
 #include "../headers/Server.hpp"
 
-typedef std::vector<pollfd>::iterator _fd_it;
+typedef std::vector<pollfd>::iterator _fdIT;
 typedef std::map<int, Client*>::iterator _clientIT;
 
 Server::~Server(){}
 
-void Server::startServer()
-{
-    setupSocket();
-}
-
 Server::Server(string port, string password) : _Clients()
 {
-    if(atoi(port.c_str()) != SERVER_PORT)
-        throw std::runtime_error("Incorrect port number (Try 6697)");
+    if(atoi(port.c_str()) != SERVER_PORT || port.length() != 4)
+        throw std::runtime_error("Incorrect port number 6697");
+
     this->_password = password;
     this->_clientMax = MAX_CLIENTS;
     this->_name = SERVER_NAME;
-    this->_currentClients = 1;
     this->_portNumber = SERVER_PORT;
+    
+    setupSocket();
 }
 
 void Server::setupSocket()
@@ -99,7 +96,7 @@ void Server::mainServerLoop()
         if (poll(_fds.data(), _fds.size(), -1) == -1)
 			throw std::runtime_error("Poll failed");
 
-        for(_fd_it it = _fds.begin(); it != _fds.end(); ++it)
+        for(_fdIT it = _fds.begin(); it != _fds.end(); ++it)
         {
             if (it->revents & POLLIN)
             {
@@ -111,11 +108,34 @@ void Server::mainServerLoop()
             }
             if (it->revents & POLLHUP)
             {
-                close(it->fd);
+                disconnect(it->fd);
                 _fds.erase(it);
+                break;
             }
         }
     }
+}
+
+void Server::disconnect(int fd)
+{
+    cout << "Bye bye Mr [ " CYAN << fd <<  RESET" ]" << endl;
+    _clientIT it = _Clients.find(fd);
+    close(fd);
+    if (it != _Clients.end())
+    {
+        delete it->second;
+        _Clients.erase(it);
+    }
+
+    for(_fdIT it = _fds.begin(); it != _fds.end(); ++it)
+    {
+        if (it->fd == fd)
+        {
+            _fds.erase(it);
+            return;
+        }
+    }
+    cout << RED << "Client disconnected" << RESET << endl;
 }
 
 void Server::add_Client()
@@ -149,25 +169,36 @@ void Server::add_Client()
 
 void Server::checkClientRequest(int _fd)
 {
-    _clientIT it =_Clients.find(_fd);
-    if(it == _Clients.end())
-        return;
-    //Client *client = it->second;
-    cout << readfd(_fd) << endl;
+	try
+	{
+		std::map<int, Client *>::iterator it = _Clients.find(_fd);
+		if (it == _Clients.end())
+			return;
+		
+		//Client *client = it->second;
+        int bytes_read = 0;
+		string message;
+        readfd(_fd, message, bytes_read);
+        if(bytes_read == 0)
+        {
+            disconnect(_fd);
+            return;
+        }
+	}
+	catch (const std::exception &e)
+	{
+		std::cerr << e.what() << '\n';
+		throw std::runtime_error("Error: Cannot handle message from client");
+	}
 }
 
-string Server::readfd(int fd)
+void Server::readfd(int fd, string& message, int& bytes_read)
 {
 	char buffer[1024];
-	string message;
-
-	int bytes_read = recv(fd, buffer, 1024, 0);
+	bytes_read = recv(fd, buffer, 1024, 0);
 	if (bytes_read == -1)
 		throw std::runtime_error("Error: Cannot read from socket");
-	else if (bytes_read == 0)
-		return ("");
 
 	message = string(buffer, bytes_read);
-
-	return (message);
+    cout << message << endl;
 }

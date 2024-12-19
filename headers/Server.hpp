@@ -16,6 +16,7 @@
 #define MAX_CLIENTS 10
 #define SERVER_NAME "42IRC"
 #define SERVER_PORT 6697
+#define EOM "\r\n"
 
 class Client;
 
@@ -40,7 +41,8 @@ class Server
         void    mainServerLoop();
         void    add_Client();
         void    checkClientRequest(int _fd);
-        string  readfd(int _fd);
+        void    readfd(int _fd, string& message, int& bytes_read);
+        void    disconnect(int fd);
 
     public:
         Server(string port, string password);
