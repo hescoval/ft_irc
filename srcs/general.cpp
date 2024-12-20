@@ -1,5 +1,19 @@
 #include "../headers/general.hpp"
 
+
+bool checkValidChars(const std::string& str, const std::string& charset)
+{
+    return str.find_first_not_of(charset) != std::string::npos;
+}
+
+string strUpper(std::string str)
+{
+	for(size_t i = 0; i < str.size(); i++)
+		str[i] = toupper(str[i]);
+
+	return str;
+}
+
 void trim(std::string &test)
 {
 	size_t end = test.size() - 1;
@@ -48,13 +62,20 @@ std::vector<string> split(string str, string delim)
     while ((end = str.find(delim, start)) != string::npos) 
 	{
         if (end != start) 
-		{
             ret.push_back(str.substr(start, end - start));
-        }
         start = end + delim.length();
     }
-    if (start < str.size()) {
+    if (start < str.size())
         ret.push_back(str.substr(start));
-    }
     return ret;
+}
+
+string join_strings(std::vector<string> vec)
+{
+	string ret = "";
+	for(size_t i = 0; i < vec.size(); i++)
+	{
+		ret += vec[i];
+	}
+	return ret;
 }

@@ -12,8 +12,16 @@ Server::Server(string port, string password) : _Clients()
     this->_clientMax = MAX_CLIENTS;
     this->_name = SERVER_NAME;
     this->_portNumber = SERVER_PORT;
-    
+    initializeFunctions();
+
     setupSocket();
+}
+
+void Server::initializeFunctions()
+{
+    functions.insert(std::make_pair("QUIT", &Server::QUIT));
+    functions.insert(std::make_pair("PASS", &Server::PASS));
+    functions.insert(std::make_pair("NICK", &Server::NICK));
 }
 
 void Server::setupSocket()
@@ -179,7 +187,9 @@ void Server::checkClientRequest(int _fd)
             return;
         }
 
-        std::vector<string> splits = split(message, "\r\n");
+        std::vector<string> splits = split(message, EOM);
+        for(size_t i = 0; i < splits.size(); i++)
+            cout << splits[i];
         for(size_t i = 0; i < splits.size(); i++)
             handleCMD(splits[i], _fd);
 	}
@@ -222,8 +232,26 @@ _fdIT Server::getUserPoll(int fd)
     return _fds.end();
 }
 
-void Server::safely_leave(int fd)
+void Server::handleCMD(string message, int fd)
 {
+    std::vector<string> messagesplits = split(message, " ");
+
+    if(messagesplits.size() == 0)
+        return;
+    
+    Command input(message);
+    cout << input.command << endl;
+    std::map<std::string, void (Server::*)(Command, int)>::iterator it = functions.find(input.command);
+    if(it != functions.end())
+        (this->*(it->second))(input, fd);
+    else if(input.command != "CAP")
+        ServerToUser(_name + ERR_COMMANDNOTFND, fd);
+    
+}
+
+void Server::QUIT(Command input, int fd)
+{
+    (void)input;
     _fdIT userIT = getUserPoll(fd);
     if(userIT != _fds.end())
     {
@@ -233,39 +261,49 @@ void Server::safely_leave(int fd)
 	disconnect(fd);
 }
 
-void Server::handleCMD(string message, int fd)
+void Server::NICK(Command input, int fd)
 {
-    std::vector<string> messagesplits = split(message, " ");
+    string valid = "ABCDEFGHIJKLMNOPQRSTUVXYZ0123456789[]{}\\|";
+    Client* client = getClient(fd);
 
-    if(messagesplits.size() == 0)
+    string nick = strUpper( join_strings(input.args) );
+    if(!checkValidChars(nick, valid))
         return;
     
-    Command input(message);
-    if(input.command == "QUIT")
+    if(nick == client->getNickname())
     {
-        safely_leave(fd);
+        ServerToUser(nick + ERR_NICKNAMEINUSE, fd);
+        return;
     }
-    cout << input.command<< endl;
-    if(input.command == "PASS")
+
+    std::pair<std::set<string>::iterator, bool> in_use;
+    in_use = inUseNicks.insert(nick);
+
+    if(!in_use.second)
     {
-        cout << "herro" << endl;
-        PASS(input, fd);
+        ServerToUser(nick + ERR_NICKNAMEINUSE, fd);
+        return;
     }
 }
 
 void Server::PASS(Command input, int fd)
 {
     string fullpass = "";
-    Client* client = getClient(fd);
 
-    for(size_t i = 0; i < input.args.size(); i++)
-        fullpass += input.args[i];
+    fullpass = join_strings(input.args);
 
     if(fullpass != this->_password)
     {
-        string error =  client->getHostname() + ": errou foi mlk\r\n";
-        send(fd, error.c_str(), error.size(), 0);
-        safely_leave(fd);
+        ServerToUser(ERR_PASSWDMISMATCH, fd);
+        QUIT(input, fd);
     }
     return;
+}
+
+
+// The holy grail
+void Server::ServerToUser(string message, int fd)
+{
+    message += EOM;
+    send(fd, message.c_str(), message.size(), 0);
 }

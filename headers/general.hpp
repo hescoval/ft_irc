@@ -54,9 +54,12 @@ using std::endl;
 # define BRIGHT_CYAN	"\e[96m"
 # define BRIGHT_WHITE	"\e[97m"
 
+string join_strings(std::vector<string> vec);
 void trim(std::string &test);
 void replace_whitespace(string &input);
+string strUpper(std::string str);
 void remove_consecutives(string &str, char to_remove);
+bool checkValidChars(const std::string& str, const std::string& charset);
 std::vector<string> split(string str, string delims);
 
 template<typename T>

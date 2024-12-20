@@ -3,6 +3,7 @@
 #include "Command.hpp"
 #include "Client.hpp"
 #include "general.hpp"
+#include "ServerToClient.hpp"
 
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -13,13 +14,15 @@
 #include <stdexcept>
 #include <netdb.h>
 #include <arpa/inet.h>
-
+#include <utility>
+#include <set>
 
 
 #define MAX_CLIENTS 10
 #define SERVER_NAME "42IRC"
 #define SERVER_PORT 6697
 #define EOM "\r\n"
+#define NUMCOMMANDS 2
 
 class Client;
 class Command;
@@ -35,8 +38,10 @@ class Server
         int _clientMax;
         int _currentClients;
         sockaddr_in _ipV4;
-        std::vector<pollfd> _fds;
 
+        std::set<string> inUseNicks;
+        std::vector<pollfd> _fds;
+        std::map<string, void (Server::*)(Command, int)> functions;
         std::map<int, Client*> _Clients;
         //std::map<string, Channel*> _Channels; 
 
@@ -51,13 +56,17 @@ class Server
         void    readfd(int _fd, string& message, int& bytes_read);
         void    disconnect(int fd);
         void    handleCMD(string message, int fd);
-        void    safely_leave(int fd);
+        void    initializeFunctions();
+        void    ServerToUser(string message, int fd);
 
         _fdIT   getUserPoll(int fd);
         Client* getClient(int fd);
+
         /*######################## COMMANDS ##############################*/
 
-        void    PASS(Command nickname, int fd);
+        void    QUIT(Command input, int fd);
+        void    PASS(Command input, int fd);
+        void    NICK(Command input, int fd);
 
     public:
         Server(string port, string password);

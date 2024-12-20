@@ -1,3 +1,5 @@
+#pragma once 
+
 #include "general.hpp"
 
 class Command
@@ -6,6 +8,7 @@ class Command
         string  full_command;
         bool    has_target;
         bool    has_flags;
+        std::vector<string>  errors;
 
     public:
         string  command;
