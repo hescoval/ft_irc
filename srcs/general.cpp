@@ -1,9 +1,32 @@
 #include "../headers/general.hpp"
 
+string CurrentDate() 
+{
+    std::time_t now = std::time(0);
+    std::tm* now_tm = std::localtime(&now);
+
+    std::ostringstream date_stream;
+    date_stream << (now_tm->tm_year + 1900) << "-"
+                << std::setw(2) << std::setfill('0') << (now_tm->tm_mon + 1) << "-"
+                << std::setw(2) << std::setfill('0') << now_tm->tm_mday;
+    return date_stream.str();
+}
+
+string CurrentTime() 
+{
+    std::time_t now = std::time(0);
+    std::tm* now_tm = std::localtime(&now);
+
+    std::ostringstream time_stream;
+    time_stream << std::setw(2) << std::setfill('0') << now_tm->tm_hour << ":"
+                << std::setw(2) << std::setfill('0') << now_tm->tm_min << ":"
+                << std::setw(2) << std::setfill('0') << now_tm->tm_sec;
+    return time_stream.str();
+}
 
 bool checkValidChars(const std::string& str, const std::string& charset)
 {
-    return str.find_first_not_of(charset) != std::string::npos;
+    return !(str.find_first_not_of(charset) != std::string::npos);
 }
 
 string strUpper(std::string str)
@@ -39,6 +62,16 @@ void replace_whitespace(string &input)
 		if (isspace(input[i]))
 			input[i] = ' ';
 		i++;
+	}
+}
+
+void strReplace(string &str, const string &from, const string &to)
+{
+	size_t start_pos = 0;
+	while((start_pos = str.find(from, start_pos)) != string::npos)
+	{
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length();
 	}
 }
 

@@ -3,6 +3,9 @@
 Command::Command(string input)
 {
     this->full_command = input;
+    string copy = input;
+    trim(copy);
+    cout << copy << endl;
     std::vector<string> splits = split(input, " ");
     this->command = strUpper(splits[0]);
 

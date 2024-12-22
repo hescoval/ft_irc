@@ -11,21 +11,36 @@ class Client
         string  _username;
         string  _realname;
         string  _hostname;
+        string  _hostmask;
+        string  _password;
+        bool    _auth;
         int     _fd;
         int     _port;
-        bool    _verified;
+        bool    _PASSUsed;
+        bool    _NICKUsed;
+        bool    _USERUsed;
 
     public:
         Client(string hostname, uint16_t port, int fd);
         ~Client();
-        bool    getVerified() const;
+        bool    getRegistered() const;
         string  getNickname() const;
 		string  getUsername() const;
 		string  getRealname() const;
 		string  getHostname() const;
-        void    setVerified(bool value);
+        string  getHostmask() const;
+        string  getPassword() const;
+        bool    getAuth() const;
+
+        bool    getNICKused() const;
+        void    setAuth(bool value);
+        void    setPassword(const string str);
+        void    setPASSUsed(bool value);
+        void    setNICKUsed(bool value);
+        void    setUSERUsed(bool value);
         void    setNickname(const string str);
         void    setUsername(const string str);
         void    setRealname(const string str);
-        void    setHostName(const string str);
+        void    setHostmask(const string str);
+        bool    getPASSUsed() const;
 };

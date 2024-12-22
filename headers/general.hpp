@@ -13,6 +13,8 @@
 #include <vector>
 #include <map>
 #include <sstream>
+#include <ctime>
+#include <iomanip>
 
 /*
 	The using keyword is only forbidden if you use it for entire namespaces
@@ -60,7 +62,10 @@ void replace_whitespace(string &input);
 string strUpper(std::string str);
 void remove_consecutives(string &str, char to_remove);
 bool checkValidChars(const std::string& str, const std::string& charset);
+void strReplace(string &str, const string &from, const string &to);
 std::vector<string> split(string str, string delims);
+string CurrentDate();
+string CurrentTime();
 
 template<typename T>
 string toString(const T& value)

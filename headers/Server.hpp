@@ -18,17 +18,18 @@
 #include <set>
 
 
-#define MAX_CLIENTS 10
-#define SERVER_NAME "42IRC"
+#define MAX_CLIENTS 3
+#define SERVER_NAMERPL ":42.IRC"
+#define SERVER_NAME "42.IRC"
+#define SERVER_HOST "localhost"
 #define SERVER_PORT 6697
 #define EOM "\r\n"
-#define NUMCOMMANDS 2
 
 class Client;
 class Command;
 
 typedef std::vector<pollfd>::iterator _fdIT;
-typedef std::map<int, Client*>::iterator _clientIT;
+typedef std::map<int, Client>::iterator _clientIT;
 
 class Server
 {
@@ -37,13 +38,15 @@ class Server
         int _socketfd;
         int _clientMax;
         int _currentClients;
+        string  _creationDate;
+        string  _creationTime;
         sockaddr_in _ipV4;
 
         std::set<string> inUseNicks;
         std::vector<pollfd> _fds;
         std::map<string, void (Server::*)(Command, int)> functions;
-        std::map<int, Client*> _Clients;
-        //std::map<string, Channel*> _Channels; 
+        std::map<int, Client> _Clients;
+        //std::map<string, Channel> _Channels; 
 
         string _password;
         string _name;
@@ -58,15 +61,21 @@ class Server
         void    handleCMD(string message, int fd);
         void    initializeFunctions();
         void    ServerToUser(string message, int fd);
+        string  getCreationDate() const;
+        string  getCreationTime() const;
+        void    setCreationDate(const string str);
+        void    setCreationTime(const string str);
 
         _fdIT   getUserPoll(int fd);
-        Client* getClient(int fd);
+        Client& getClient(int fd);
+        void    FinishRegistration(Command input, int fd);
 
         /*######################## COMMANDS ##############################*/
 
         void    QUIT(Command input, int fd);
         void    PASS(Command input, int fd);
         void    NICK(Command input, int fd);
+        void    USER(Command input, int fd);
 
     public:
         Server(string port, string password);

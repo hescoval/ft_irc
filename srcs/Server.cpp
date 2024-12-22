@@ -17,13 +17,6 @@ Server::Server(string port, string password) : _Clients()
     setupSocket();
 }
 
-void Server::initializeFunctions()
-{
-    functions.insert(std::make_pair("QUIT", &Server::QUIT));
-    functions.insert(std::make_pair("PASS", &Server::PASS));
-    functions.insert(std::make_pair("NICK", &Server::NICK));
-}
-
 void Server::setupSocket()
 {
     this->_socketfd = socket(AF_INET, SOCK_STREAM, 0); // Create a socket
@@ -94,8 +87,12 @@ void Server::setupIPV4()
     However, this event and POLLIN, POLLRDNORM, POLLRDBAND, or POLLPRI are not mutually-exclusive. 
     This flag is only valid in the revents bitmask; it shall be ignored in the events member.
 */
+
 void Server::mainServerLoop()
 {
+    setCreationDate(CurrentDate());
+    setCreationTime(CurrentTime());
+
     while(true)
     {
         if (poll(_fds.data(), _fds.size(), -1) == -1)
@@ -126,13 +123,15 @@ void Server::disconnect(int fd)
 {
     cout << "Bye bye Mr [ " CYAN << fd <<  RESET" ]" << endl;
     _clientIT it = _Clients.find(fd);
-    close(fd);
+    cout << "deleting client from hashset - " << it->second.getNickname() << endl;
+    inUseNicks.erase(it->second.getNickname());
     if (it != _Clients.end())
     {
-        delete it->second;
+        cout << "Deleting client " << fd << endl;
         _Clients.erase(it);
     }
 
+    close(fd);
     _fdIT poll = getUserPoll(fd);
     if(poll != _fds.end())
         _fds.erase(poll);
@@ -149,35 +148,31 @@ void Server::add_Client()
         throw std::runtime_error("Couldn't accept new client");
 
     pollfd client_poll = {new_fd, POLLIN, 0};
-	_fds.push_back(client_poll);
-
     if (_fds.size() >= MAX_CLIENTS)
     {
+        ServerToUser("Server is full, try again later", new_fd);
         close(new_fd);
         return;
     }
-
-    pollfd new_client = {new_fd, POLLIN, 0};
-    _fds.push_back(new_client);
+	_fds.push_back(client_poll);
 
     char hostname[NI_MAXHOST];
 
     if (gethostname(hostname, sizeof(hostname)) == -1)
         throw std::runtime_error("gethostname() failed");
 
-    Client *client = new Client(hostname, ntohs(clientAddress.sin_port), new_fd);
-    _Clients.insert(std::pair<int, Client*>(new_fd, client));
+    Client client = Client(hostname, ntohs(clientAddress.sin_port), new_fd);
+    _Clients.insert(std::pair<int, Client>(new_fd, client));
 }
 
 void Server::checkClientRequest(int _fd)
 {
 	try
 	{
-		std::map<int, Client *>::iterator it = _Clients.find(_fd);
+		_clientIT it = _Clients.find(_fd);
 		if (it == _Clients.end())
 			return;
 		
-		//Client *client = it->second;
         int bytes_read = 0;
 		string message;
         readfd(_fd, message, bytes_read);
@@ -188,8 +183,6 @@ void Server::checkClientRequest(int _fd)
         }
 
         std::vector<string> splits = split(message, EOM);
-        for(size_t i = 0; i < splits.size(); i++)
-            cout << splits[i];
         for(size_t i = 0; i < splits.size(); i++)
             handleCMD(splits[i], _fd);
 	}
@@ -208,102 +201,47 @@ void Server::readfd(int fd, string& message, int& bytes_read)
 		throw std::runtime_error("Error: Cannot read from socket");
 
 	message = string(buffer, bytes_read);
-    cout << message << endl;
 }
 
-Client* Server::getClient(int fd)
+Client& Server::getClient(int fd)
 {
     _clientIT it = _Clients.find(fd);
     if(it != _Clients.end())
         return it->second;
-    return NULL;
+    throw std::runtime_error("Can't find user");
 }
 
 _fdIT Server::getUserPoll(int fd)
 {
-    _fdIT it = _fds.begin();
-    for(; it != _fds.end(); ++it)
-    {
+    for( _fdIT it = _fds.begin(); it != _fds.end(); ++it)
         if (it->fd == fd)
-        {
             return it;
-        }
-    }
     return _fds.end();
 }
-
-void Server::handleCMD(string message, int fd)
-{
-    std::vector<string> messagesplits = split(message, " ");
-
-    if(messagesplits.size() == 0)
-        return;
-    
-    Command input(message);
-    cout << input.command << endl;
-    std::map<std::string, void (Server::*)(Command, int)>::iterator it = functions.find(input.command);
-    if(it != functions.end())
-        (this->*(it->second))(input, fd);
-    else if(input.command != "CAP")
-        ServerToUser(_name + ERR_COMMANDNOTFND, fd);
-    
-}
-
-void Server::QUIT(Command input, int fd)
-{
-    (void)input;
-    _fdIT userIT = getUserPoll(fd);
-    if(userIT != _fds.end())
-    {
-        _fds.erase(userIT);
-    }
-	close(fd);
-	disconnect(fd);
-}
-
-void Server::NICK(Command input, int fd)
-{
-    string valid = "ABCDEFGHIJKLMNOPQRSTUVXYZ0123456789[]{}\\|";
-    Client* client = getClient(fd);
-
-    string nick = strUpper( join_strings(input.args) );
-    if(!checkValidChars(nick, valid))
-        return;
-    
-    if(nick == client->getNickname())
-    {
-        ServerToUser(nick + ERR_NICKNAMEINUSE, fd);
-        return;
-    }
-
-    std::pair<std::set<string>::iterator, bool> in_use;
-    in_use = inUseNicks.insert(nick);
-
-    if(!in_use.second)
-    {
-        ServerToUser(nick + ERR_NICKNAMEINUSE, fd);
-        return;
-    }
-}
-
-void Server::PASS(Command input, int fd)
-{
-    string fullpass = "";
-
-    fullpass = join_strings(input.args);
-
-    if(fullpass != this->_password)
-    {
-        ServerToUser(ERR_PASSWDMISMATCH, fd);
-        QUIT(input, fd);
-    }
-    return;
-}
-
 
 // The holy grail
 void Server::ServerToUser(string message, int fd)
 {
     message += EOM;
     send(fd, message.c_str(), message.size(), 0);
+}
+
+void Server::setCreationDate(const string str)
+{
+    this->_creationDate = str;
+}
+
+void Server::setCreationTime(const string str)
+{
+    this->_creationTime = str;
+}
+
+string Server::getCreationDate() const
+{
+    return this->_creationDate;
+}
+
+string Server::getCreationTime() const
+{
+    return this->_creationTime;
 }
