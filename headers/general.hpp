@@ -66,6 +66,7 @@ void strReplace(string &str, const string &from, const string &to);
 std::vector<string> split(string str, string delims);
 string CurrentDate();
 string CurrentTime();
+string readFile(const string& filePath);
 
 template<typename T>
 string toString(const T& value)

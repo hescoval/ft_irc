@@ -19,8 +19,8 @@
 
 
 #define MAX_CLIENTS 3
-#define SERVER_NAMERPL ":42.IRC"
-#define SERVER_NAME "42.IRC"
+#define SERVER_NAMERPL ":42_IRC"
+#define SERVER_NAME "42_IRC"
 #define SERVER_HOST "localhost"
 #define SERVER_PORT 6697
 #define EOM "\r\n"
@@ -76,9 +76,9 @@ class Server
         void    PASS(Command input, int fd);
         void    NICK(Command input, int fd);
         void    USER(Command input, int fd);
+        void    JOIN(Command input, int fd);
 
     public:
         Server(string port, string password);
-        void startServer();
         ~Server();
 };  

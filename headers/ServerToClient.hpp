@@ -10,15 +10,19 @@
 #define RPL_YOURHOST() (SERVER_NAMERPL " 002 : Your host is " SERVER_NAME ", running version 1.0")
 #define RPL_CREATED(date, time) (SERVER_NAMERPL " 003 : This server was created " + date + " at " + time)
 
-
 //NICK
 #define ERR_NONICKNAMEGIVEN() (SERVER_NAMERPL " 431 : No nickname given")
 #define ERR_NICKNAMEINUSE(nickname) (SERVER_NAMERPL " 433 : " + nickname + " is already in use")
 #define ERR_ERRONEUSNICKNAME(nickname) (SERVER_NAMERPL " 432 : " + nickname + " Erroneous nickname")
 #define ERR_SAMENICKNAME() (SERVER_NAMERPL " 985 : You already have that nickname")
+#define NAMECHANGE(client, nickname) (":" + client + " NICK " + nickname)
 
 //PASS
 #define ERR_PASSWDMISMATCH() (SERVER_NAMERPL " 464 : Password incorrect")
 
 //USER
-#define ERR_BADPROTOCOL() (SERVER_NAMERPL "986 : Bad protocol (Need 0 *)")
+#define ERR_BADPROTOCOL() (SERVER_NAMERPL "986 : Bad protocol ( [USER] 0 * [realname] )")
+
+//JOIN
+#define JOINRPL(nick, user, channel) (":" + nick + "!" + user + "@" + SERVER_HOST " JOIN :" + channel)
+

@@ -12,6 +12,7 @@ class Client
         string  _realname;
         string  _hostname;
         string  _hostmask;
+        string  _cleanhostmask;
         string  _password;
         bool    _auth;
         int     _fd;
@@ -30,9 +31,12 @@ class Client
 		string  getHostname() const;
         string  getHostmask() const;
         string  getPassword() const;
+        string  getcleanHostmask() const;
         bool    getAuth() const;
 
         bool    getNICKused() const;
+
+        void    setcleanHostmask(const string str);
         void    setAuth(bool value);
         void    setPassword(const string str);
         void    setPASSUsed(bool value);

@@ -4,13 +4,14 @@ Client::~Client(){}
 
 Client::Client(string hostname, uint16_t port, int fd)
 {
+    
     string id = toString(reinterpret_cast<uintptr_t>(this));
-
     _nickname = "default" + id;
     _username = "defaultUserName" + id;
     _realname = "realname" + id;
     _hostname = hostname;
     _hostmask = _nickname + "[!" + _username + "@" + _hostname + "]";
+    _cleanhostmask = _nickname + "!" + _username + "@" + _hostname;
     _USERUsed = false;
     _NICKUsed = false;
     _PASSUsed = false;
@@ -27,6 +28,11 @@ void Client::setPassword(const string str)
 string Client::getPassword() const
 {
     return _password;
+}
+
+void Client::setcleanHostmask(const string str)
+{
+    _cleanhostmask = str;
 }
 
 void Client::setNickname(const string str)
@@ -62,6 +68,11 @@ void Client::setNICKUsed(bool value)
 void Client::setUSERUsed(bool value)
 {
     _USERUsed = value;
+}
+
+string  Client::getcleanHostmask() const
+{
+    return (_nickname + "!~" + _username + "@" + _hostname);
 }
 
 string Client::getHostmask() const

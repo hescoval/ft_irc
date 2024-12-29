@@ -26,6 +26,7 @@ string CurrentTime()
 
 bool checkValidChars(const std::string& str, const std::string& charset)
 {
+	cout << "TESTING [" << str << "]" << endl;
     return !(str.find_first_not_of(charset) != std::string::npos);
 }
 
@@ -111,4 +112,16 @@ string join_strings(std::vector<string> vec)
 		ret += vec[i];
 	}
 	return ret;
+}
+
+string readFile(const string& filePath) 
+{
+    std::ifstream file(filePath.c_str());
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file");
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
 }

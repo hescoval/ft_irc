@@ -75,7 +75,6 @@ void Server::setupIPV4()
     mainServerLoop();
 }
 
-
 /*
     POLLHUP, on the other hand, indicates that your file descriptor is valid, but that it's in a state where:
 
@@ -222,8 +221,10 @@ _fdIT Server::getUserPoll(int fd)
 // The holy grail
 void Server::ServerToUser(string message, int fd)
 {
+    cout << "To user " << fd << " -> [" << message << "]" << endl;
     message += EOM;
-    send(fd, message.c_str(), message.size(), 0);
+
+    send(fd, message.c_str(), message.size(), MSG_DONTWAIT);
 }
 
 void Server::setCreationDate(const string str)

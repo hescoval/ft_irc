@@ -6,7 +6,7 @@ Command::Command(string input)
     string copy = input;
     trim(copy);
     cout << copy << endl;
-    std::vector<string> splits = split(input, " ");
+    std::vector<string> splits = split(copy, " ");
     this->command = strUpper(splits[0]);
 
     for(size_t i = 1; i < splits.size(); i++)

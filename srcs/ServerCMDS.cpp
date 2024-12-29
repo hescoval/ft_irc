@@ -6,6 +6,7 @@ void Server::initializeFunctions()
     functions.insert(std::make_pair("PASS", &Server::PASS));
     functions.insert(std::make_pair("NICK", &Server::NICK));
     functions.insert(std::make_pair("USER", &Server::USER));
+    functions.insert(std::make_pair("JOIN", &Server::JOIN));
 }
 
 void Server::handleCMD(string message, int fd)
@@ -39,6 +40,7 @@ void Server::FinishRegistration(Command input, int fd)
     client.setAuth(true);
     cout << "Fd number " << fd << " finished his registration" << endl;
     client.setHostmask(client.getNickname() + "[!" + client.getUsername() + "@" + client.getHostname() + "]");
+    client.setcleanHostmask(client.getNickname() + "!" + client.getUsername() + "@" + client.getHostname());
     ServerToUser(RPL_WELCOME(client.getHostmask()), fd);
     ServerToUser(RPL_YOURHOST(), fd);
     ServerToUser(RPL_CREATED(getCreationDate(), getCreationTime()), fd);
@@ -62,6 +64,7 @@ void Server::NICK(Command input, int fd)
     Client& client = getClient(fd);
     string old_nick = client.getNickname();
     string nick = join_strings(input.args);
+
     if(!checkValidChars(strUpper(nick), valid))
         return ServerToUser(ERR_ERRONEUSNICKNAME(nick), fd);
 
@@ -80,6 +83,7 @@ void Server::NICK(Command input, int fd)
         return;
     }
     inUseNicks.erase(old_nick);
+    ServerToUser(NAMECHANGE(client.getcleanHostmask(), nick), fd);
     client.setNickname(nick);
     client.setNICKUsed(true);
     if(client.getRegistered() && !client.getAuth())
@@ -115,7 +119,6 @@ void Server::USER(Command input, int fd)
         return ServerToUser(ERR_ALREADYREGISTERED(), fd);
     if(input.args.size() != 4)
         return ServerToUser(ERR_NEEDMOREPARAMS(input.command), fd);
-
     if(input.args[1] != "0" || input.args[2] != "*")
         return ServerToUser(ERR_BADPROTOCOL(), fd);
 
@@ -131,4 +134,20 @@ void Server::USER(Command input, int fd)
 
     if(client.getRegistered())
         FinishRegistration(input, fd);
+}
+
+void Server::JOIN(Command input, int fd)
+{
+    (void)input;
+    (void)fd;
+    
+    Client &client = getClient(fd);
+    if (!client.getAuth())
+        return ServerToUser(ERR_NEEDPWD(), fd);
+
+    
+    ServerToUser(JOINRPL( client.getNickname(), client.getNickname(), input.args[0] ), fd);
+
+    cout << JOINRPL( client.getNickname(), client.getUsername(), input.args[0] ) << endl;
+    return;
 }
