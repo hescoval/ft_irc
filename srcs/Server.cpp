@@ -222,8 +222,8 @@ _fdIT Server::getUserPoll(int fd)
 void Server::ServerToUser(string message, int fd)
 {
     cout << "To user " << fd << " -> [" << message << "]" << endl;
+    
     message += EOM;
-
     send(fd, message.c_str(), message.size(), MSG_DONTWAIT);
 }
 

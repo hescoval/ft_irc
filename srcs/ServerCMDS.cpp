@@ -38,12 +38,12 @@ void Server::FinishRegistration(Command input, int fd)
     }
 
     client.setAuth(true);
-    cout << "Fd number " << fd << " finished his registration" << endl;
     client.setHostmask(client.getNickname() + "[!" + client.getUsername() + "@" + client.getHostname() + "]");
     client.setcleanHostmask(client.getNickname() + "!" + client.getUsername() + "@" + client.getHostname());
     ServerToUser(RPL_WELCOME(client.getHostmask()), fd);
     ServerToUser(RPL_YOURHOST(), fd);
     ServerToUser(RPL_CREATED(getCreationDate(), getCreationTime()), fd);
+    cout << "Fd number " << fd << " finished his registration" << endl;
     cout << "Nickname: " CYAN << client.getNickname() << RESET << endl;
     cout << "Username: " CYAN << client.getUsername() << RESET << endl;
     cout << "Realname: " CYAN << client.getRealname() << RESET << endl;
@@ -83,7 +83,11 @@ void Server::NICK(Command input, int fd)
         return;
     }
     inUseNicks.erase(old_nick);
-    ServerToUser(NAMECHANGE(client.getcleanHostmask(), nick), fd);
+
+    if(client.getNICKused())
+        ServerToUser(NAMECHANGE(client.getcleanHostmask(), nick), fd);
+    else
+        ServerToUser(NAMECHANGE(client.getHostname(), nick), fd);
     client.setNickname(nick);
     client.setNICKUsed(true);
     if(client.getRegistered() && !client.getAuth())
@@ -145,9 +149,7 @@ void Server::JOIN(Command input, int fd)
     if (!client.getAuth())
         return ServerToUser(ERR_NEEDPWD(), fd);
 
-    
-    ServerToUser(JOINRPL( client.getNickname(), client.getNickname(), input.args[0] ), fd);
+    ServerToUser(JOINRPL( client.getNickname(), client.getUsername(), client.getHostname(), input.args[0] ), fd);
 
-    cout << JOINRPL( client.getNickname(), client.getUsername(), input.args[0] ) << endl;
     return;
 }

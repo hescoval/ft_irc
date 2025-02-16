@@ -24,5 +24,4 @@
 #define ERR_BADPROTOCOL() (SERVER_NAMERPL "986 : Bad protocol ( [USER] 0 * [realname] )")
 
 //JOIN
-#define JOINRPL(nick, user, channel) (":" + nick + "!" + user + "@" + SERVER_HOST " JOIN :" + channel)
-
+#define JOINRPL(nick, user, host, channel) (":" + nick + " JOIN " + channel)

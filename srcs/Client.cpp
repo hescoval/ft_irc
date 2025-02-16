@@ -11,7 +11,7 @@ Client::Client(string hostname, uint16_t port, int fd)
     _realname = "realname" + id;
     _hostname = hostname;
     _hostmask = _nickname + "[!" + _username + "@" + _hostname + "]";
-    _cleanhostmask = _nickname + "!" + _username + "@" + _hostname;
+    _cleanhostmask = _nickname + "!~" + _username + "@" + _hostname;
     _USERUsed = false;
     _NICKUsed = false;
     _PASSUsed = false;

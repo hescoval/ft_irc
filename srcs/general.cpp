@@ -26,7 +26,6 @@ string CurrentTime()
 
 bool checkValidChars(const std::string& str, const std::string& charset)
 {
-	cout << "TESTING [" << str << "]" << endl;
     return !(str.find_first_not_of(charset) != std::string::npos);
 }
 
