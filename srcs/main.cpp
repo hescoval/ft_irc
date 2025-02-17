@@ -1,5 +1,5 @@
-#include "headers/general.hpp"
-#include "headers/Server.hpp"
+#include "general.hpp"
+#include "Server.hpp"
 
 void incorrect_usage()
 {

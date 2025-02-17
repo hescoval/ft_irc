@@ -1,4 +1,4 @@
-#include "../headers/Command.hpp"
+#include "Command.hpp"
 
 Command::Command(string input)
 {
@@ -19,4 +19,9 @@ Command::Command(string input)
 Command::~Command()
 {
     return;
+}
+
+string	Command::getFullCommand() const
+{
+	return (this->full_command);
 }

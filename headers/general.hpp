@@ -15,6 +15,7 @@
 #include <sstream>
 #include <ctime>
 #include <iomanip>
+#include <deque>
 
 /*
 	The using keyword is only forbidden if you use it for entire namespaces

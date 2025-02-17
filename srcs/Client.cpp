@@ -1,4 +1,4 @@
-#include "../headers/Client.hpp"
+#include "Client.hpp"
 
 Client::~Client(){}
 
@@ -10,7 +10,7 @@ Client::Client(string hostname, uint16_t port, int fd)
     _username = "defaultUserName" + id;
     _realname = "realname" + id;
     _hostname = hostname;
-    _hostmask = _nickname + "[!" + _username + "@" + _hostname + "]";
+    _hostmask = _nickname + "!" + _username + "@" + _hostname;
     _cleanhostmask = _nickname + "!~" + _username + "@" + _hostname;
     _USERUsed = false;
     _NICKUsed = false;
@@ -113,6 +113,11 @@ bool    Client::getPASSUsed() const
 bool   Client::getAuth() const
 {
     return _auth;
+}
+
+int	Client::getFd() const
+{
+	return (this->_fd);
 }
 
 void    Client::setAuth(bool value)

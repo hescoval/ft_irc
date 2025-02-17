@@ -18,4 +18,6 @@ class Command
 
         Command(string input);
         ~Command();
+
+		string	getFullCommand()const ;
 };

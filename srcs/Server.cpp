@@ -1,4 +1,4 @@
-#include "../headers/Server.hpp"
+#include "Server.hpp"
 
 Server::~Server(){}
 
@@ -221,10 +221,15 @@ _fdIT Server::getUserPoll(int fd)
 // The holy grail
 void Server::ServerToUser(string message, int fd)
 {
-    cout << "To user " << fd << " -> [" << message << "]" << endl;
-    
+	int	test;
+
     message += EOM;
-    send(fd, message.c_str(), message.size(), MSG_DONTWAIT);
+    cout << "To user " << fd << " -> [" << message << "]" << endl;
+    test = send(fd, message.c_str(), message.size(), 0);
+	if (test == -1)
+		std::cout << "ERROR\n";
+	else
+		std::cout << test << std::endl;
 }
 
 void Server::setCreationDate(const string str)
@@ -245,4 +250,18 @@ string Server::getCreationDate() const
 string Server::getCreationTime() const
 {
     return this->_creationTime;
+}
+
+Channel&	Server::addChannel(std::string name, Client& client)
+{
+	this->_channels[name] = Channel(name, *this, client);
+	return (this->_channels[name]);
+}
+
+Channel* Server::getChannel(std::string name)
+{
+
+	if (this->_channels.count(name))
+		return (&this->_channels[name]);
+	return (NULL);
 }

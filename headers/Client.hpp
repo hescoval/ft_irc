@@ -33,6 +33,7 @@ class Client
         string  getPassword() const;
         string  getcleanHostmask() const;
         bool    getAuth() const;
+		int		getFd() const;
 
         bool    getNICKused() const;
 

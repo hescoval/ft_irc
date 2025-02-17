@@ -1,27 +1,62 @@
+#pragma once
+
 #include "Server.hpp"
 
-#define ERR_COMMANDNOTFND(command) (SERVER_NAMERPL " 987 : " + command + " Command not found.")
-#define ERR_NEEDMOREPARAMS(command) (SERVER_NAMERPL " 461 : " + command + " Not enough parameters")
-#define ERR_ALREADYREGISTERED() (SERVER_NAMERPL " 462 : Already Registered")
-#define ERR_NEEDPWD() (SERVER_NAMERPL " 463 : Please use PASS before attempting any other command.")
+//STANDARD RESPONSE FORMAT
+#define SERVER_RESPONSE(numeric)							(SERVER_NAMERPL + string(" ") + numeric + string(" : "))
+#define CLIENT_RESPONSE(numeric, nickname)					(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" : "))
+#define CLCHAN_RESPONSE(numeric, nickname, channel)			(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" ") + channel + string(" : "))
+#define CLEXTR_RESPONSE(numeric, nickname, extra)			(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" ") + extra + string(" : "))
+#define CLEXCH_RESPONSE(numeric, nickname, extra, channel)	(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" ") + extra + string(" ") + channel + string(" : "))
+
+//USER COMMAND AND MESSAGE
+
+#define CLIENT_COMMAND(hostmask, command, target)			(string(":") + hostmask + string(" ") + command + string(" ") + target)
+#define CLIENT_MESSAGE(hostmask, target, message)			(CLIENT_COMMAND(hostmask, string("PRIVMSG"), target) + string(" :") + message)
+
+//ERRORS
+#define ERR_NOSUCHCHANNEL(nickname, channel)				(CLCHAN_RESPONSE(string("403"), nickname, channel) + string("No such channel"))
+#define ERR_NOTONCHANNEL(nickname, channel)					(CLCHAN_RESPONSE(string("442"), nickname, channel) + string("You're not on that channel"))
+#define ERR_NEEDMOREPARAMS(command, nickname)				(CLIENT_RESPONSE(string("461"), nickname) + command + string(" - Not enough parameters."))
+#define ERR_ALREADYREGISTERED(nickname)						(CLIENT_RESPONSE(string("462"), nickname) + string("Already Registered."))
+#define ERR_NEEDPWD(nickname)								(CLIENT_RESPONSE(string("463"), nickname) + string("Please use PASS before attempting any other command."))
+#define ERR_NOPRIVILEGES(nickname)							(CLIENT_RESPONSE(string("481"), nickname) + string("Permission Denied- You're not an IRC operator"))
+#define ERR_COMMANDNOTFND(command, nickname)				(CLIENT_RESPONSE(string("987"), nickname) + command + string(" - Command not found."))
 
 //Welcome Messages
-#define RPL_WELCOME(hostname) (SERVER_NAMERPL " 001 : Welcome to the " SERVER_HOST " Network " + hostname)
-#define RPL_YOURHOST() (SERVER_NAMERPL " 002 : Your host is " SERVER_NAME ", running version 1.0")
-#define RPL_CREATED(date, time) (SERVER_NAMERPL " 003 : This server was created " + date + " at " + time)
+#define RPL_WELCOME(hostmask, nickname)						(CLIENT_RESPONSE(string("001"), nickname) + string("Welcome to the ") + SERVER_NAME + string(" Network, ") + hostmask + string("!"))
+#define RPL_YOURHOST(nickname)								(CLIENT_RESPONSE(string("002"), nickname) + string("Your host is ") + SERVER_NAME + string(", running version 1.0"))
+#define RPL_CREATED(date, time, nickname)					(CLIENT_RESPONSE(string("003"), nickname) + string("This server was created ") + date + string(" at ") + time)
 
 //NICK
-#define ERR_NONICKNAMEGIVEN() (SERVER_NAMERPL " 431 : No nickname given")
-#define ERR_NICKNAMEINUSE(nickname) (SERVER_NAMERPL " 433 : " + nickname + " is already in use")
-#define ERR_ERRONEUSNICKNAME(nickname) (SERVER_NAMERPL " 432 : " + nickname + " Erroneous nickname")
-#define ERR_SAMENICKNAME() (SERVER_NAMERPL " 985 : You already have that nickname")
-#define NAMECHANGE(client, nickname) (":" + client + " NICK " + nickname)
+#define NAMECHANGE(hostmask, target)						(CLIENT_COMMAND(hostmask, string("NICK"), target))
+#define ERR_NONICKNAMEGIVEN(nickname)						(CLIENT_RESPONSE(string("431"), nickname) + string(" No nickname given."))
+#define ERR_ERRONEUSNICKNAME(nickname, target)				(CLEXTR_RESPONSE(string("432"), nickname, target) + string("Erroneous nickname."))
+#define ERR_NICKNAMEINUSE(nickname, target)					(CLEXTR_RESPONSE(string("433"), nickname, target) + string("Nickname is already in use."))
+#define ERR_SAMENICKNAME(nickname, target)					(CLEXTR_RESPONSE(string("985"), nickname, target) + string("You already have that nickname."))
 
 //PASS
-#define ERR_PASSWDMISMATCH() (SERVER_NAMERPL " 464 : Password incorrect")
+#define ERR_PASSWDMISMATCH(nickname)						(CLIENT_RESPONSE(string("464"), nickname) + string("Password incorrect."))
 
 //USER
-#define ERR_BADPROTOCOL() (SERVER_NAMERPL "986 : Bad protocol ( [USER] 0 * [realname] )")
+#define ERR_BADPROTOCOL(nickname)							(CLIENT_RESPONSE(string("986"), nickname) + string("Bad protocol ( [USER] 0 * [realname] )"))
 
 //JOIN
-#define JOINRPL(nick, user, host, channel) (":" + nick + " JOIN " + channel)
+#define JOINRPL(hostmask, channel)							(CLIENT_COMMAND(hostmask, string("JOIN"), channel))
+#define ERR_CHANNELISFULL(nickname, channel)				(CLCHAN_RESPONSE(string("471"), nickname, channel) + string("Channel is full. (+l)"))
+#define ERR_INVITEONLYCHAN(nickname, channel)				(CLCHAN_RESPONSE(string("473"), nickname, channel) + string("Cannot join channel. (+i)"))
+#define ERR_BADCHANNELKEY(nickname, channel)				(CLCHAN_RESPONSE(string("475"), nickname, channel) + string("Cannot join channel. (+k)"))
+#define ERR_INVALIDKEY(nickname, channel)					(CLCHAN_RESPONSE(string("525"), nickname, channel) + string("Key is not well-formed."))
+#define ERR_ALREADYONCHANNEL(nickname, channel)				(CLCHAN_RESPONSE(string("984"), nickname, channel) + string("Already on channel."))
+
+//TOPIC
+#define TOPICRPL(hostmask, channel, topic)					(CLIENT_COMMAND(hostmask, string("TOPIC"), channel))
+#define RPL_NOTOPIC(nickname, channel)						(CLCHAN_RESPONSE(string("331"), nickname, channel) + "No Topic is set")
+#define RPL_TOPIC(nickname, channel, topic)					(CLCHAN_RESPONSE(string("332"), nickname, channel) + topic)
+
+//KICK
+#define KICKRPL(hostmask, channel, target)					(CLIENT_COMMAND(hostmask, string("KICK"), channel) + target)
+//INVITE
+#define INVITERPL(hostmask, channel, target)				(CLIENT_COMMAND(hostmask, string("INVITE"), channel) + target)
+//MODE
+#define MODE(hostmask, target, flag)						(CLIENT_COMMAND(hostmaks, string("MODE"), target) + flag)

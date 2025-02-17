@@ -1,4 +1,4 @@
-#include "../headers/general.hpp"
+#include "general.hpp"
 
 string CurrentDate() 
 {

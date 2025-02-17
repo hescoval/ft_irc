@@ -1,37 +1,76 @@
-MAKEFLAGS += --no-print-directory
+#	====================	Files      			====================
+
 NAME = ircserv
-COMPILER = c++
-FLAGS = -Wall -Wextra -Werror --std=c++98
+FILES = main.cpp Channel.cpp Client.cpp Command.cpp general.cpp Server.cpp ServerCMDS.cpp
+
+#	====================	Objects & Target	====================
+
+OBJ = $(FILES:.cpp=.o)
+TARGET = $(addprefix $(OBJ_DIR)/, $(OBJ))
+
+#	====================	Directories			====================
+
+INC = headers
+SRC = srcs
+OBJ_DIR = objects
+
+#	====================	Commands   			====================
+
+CC = c++
 RM = rm -rf
-SRCDIR = srcs
-OBJDIR = objs
-SRCS = $(wildcard $(SRCDIR)/*.cpp) main.cpp
-OBJS = $(addprefix $(OBJDIR)/, $(notdir $(SRCS:.cpp=.o)))
+
+#	====================	Flags      			====================
+
+W = -Wall -Wextra -Werror -std=c++98
+O = -c
+I = -I $(INC)
+WBLOCK = --no-print-directory
+
+#	====================	Colors     			====================
+
+RED = \033[0;31m
+GREEN = \033[0;32m
+BLUE = \033[0;34m
+YELLOW = \033[0;33m
+MAGENTA = \033[0;35m
+CYAN = \033[0;36m
+
+B_RED = \033[1;31m
+B_GREEN = \033[1;32m
+B_BLUE = \033[1;34m
+B_YELLOW = \033[1;33m
+B_MAGENTA = \033[1;35m
+B_CYAN = \033[1;36m
+
+L_BLUE = \033[1;94m
+
+BLINK_GREEN = \033[5;32m
+
+RESET = \033[0m
+
+#	====================	Rules      			====================
 
 all: $(NAME)
-		@echo "\033[5;32mCompilation Successful\033[0m"
 
-$(NAME): $(OBJDIR) $(OBJS)
-		@$(COMPILER) $(FLAGS) -o $(NAME) $(OBJS)
+$(NAME):$(OBJ_DIR) $(TARGET)
+	@$(CC) $(W) $(TARGET) -o $(NAME)
+	@echo "$(BLINK_GREEN)Compilation Successful$(RESET)"
 
-$(OBJDIR):
-		@mkdir -p $(OBJDIR)
+$(OBJ_DIR):
+	@mkdir -p $(OBJ_DIR)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
-		@echo "Now compiling \033[0;36m$<\033[0m"
-		@$(COMPILER) $(FLAGS) -c $< -o $@
-
-$(OBJDIR)/main.o: main.cpp
-		@echo "Now compiling \033[0;36m$<\033[0m"
-		@$(COMPILER) $(FLAGS) -c $< -o $@
+$(OBJ_DIR)/%.o: $(SRC)/%.cpp
+	@$(CC) $(W) $(O) $(I) $< -o $@
+	@echo "$(B_YELLOW)$(NAME)$(RESET):$(YELLOW) $@ created$(RESET)"
 
 clean:
-		@echo "\033[0;31mRemoving /objs folder\033[0m"
-		@$(RM) $(OBJDIR)
+	@$(RM) -rf $(OBJ_DIR)
+	@echo "$(B_RED)$(NAME)$(RESET):$(RED) $(OBJ_DIR) deleted$(RESET)"
 
 fclean: clean
-		@echo "\033[0;31mRemoving binaries\033[0m"
-		@$(RM) $(NAME)
+	@$(RM) $(NAME)
+	@echo "$(B_RED)$(NAME)$(RESET):$(RED) $(NAME) deleted$(RESET)"
 
-re: fclean
-		@$(MAKE)
+re: fclean all
+
+.PHONY: all clean fclean re bonus
