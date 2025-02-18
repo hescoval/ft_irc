@@ -11,6 +11,7 @@ void Server::initializeFunctions()
 	functions.insert(std::make_pair("NAMES", &Server::NAMES));
 	functions.insert(std::make_pair("MODE", &Server::MODE));
 	functions.insert(std::make_pair("WHO", &Server::WHO));
+	functions.insert(std::make_pair("PART", &Server::PART));
 }
 
 void Server::handleCMD(string message, int fd)
@@ -292,4 +293,33 @@ void	Server::WHO(Command input, int fd)
 		cl_begin++;
 	}
 	ServerToUser(RPL_ENDOFWHO(client.getNickname(), channel->getName()), fd);
+}
+
+void Server::PART(Command input, int fd)
+{
+	Client		&client = getClient(fd);
+	string reason = join_strings(input.args, 1);
+	if(reason == "")
+	{
+		reason = "Leaving";
+	}
+
+	std::vector<string> all_channels = split(input.args[0], ",");
+	
+	for(size_t i = 0; i < all_channels.size(); i++)
+	{
+		Channel		*channel = getChannel(all_channels[i]);
+		if (!channel)
+		{
+			ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), input.args[0]), fd);
+			continue;
+		}
+		if (!channel->findClient(client.getHostmask()))
+		{
+			ServerToUser(ERR_NOTONCHANNEL(client.getNickname(), channel->getName()), fd);
+			continue;
+		}
+
+		channel->removeUser(client, reason);
+	}
 }

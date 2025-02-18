@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:55 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/18 14:05:46 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/18 14:19:49 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,8 @@ class Channel
 		void				_bcJoin(Client& client);
 		void				_bcTopic(Client& client);
 		void				_bcMessage(Client& client, std::string message);
-		
+		void				_bcPart(Client& client, std::string reason);
+
 		public:
 		Channel();
 		Channel(std::string name, Server& server, Client& client);
@@ -59,6 +60,7 @@ class Channel
 		size_t						getMaxClients() const;
 		Client*						findClient(std::string hostmask);
 		Client*						findOperator(std::string hostmask);
+		void						removeUser(Client& client, string reason);
 		bool						isOperator(Client& client);
 		void						_bcName(Client& client, std::string prefix);
 		void						_bcEndName();

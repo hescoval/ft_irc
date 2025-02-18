@@ -86,6 +86,8 @@ class Server
 		void		NAMES(Command input, int fd);
 		void		MODE(Command input, int fd);
 		void		WHO(Command input, int fd);
+		void        PART(Command input, int fd);
+		
     public:
 		Server(string port, string password);
 		~Server();

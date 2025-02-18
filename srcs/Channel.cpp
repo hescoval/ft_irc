@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:35 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/18 14:04:41 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/18 14:22:07 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,6 +145,40 @@ size_t	Channel::getMaxClients()  const
 	return (this->_maxClient);
 }
 
+void	Channel::removeUser(Client& client, string reason)
+{
+	std::deque<Client*>::iterator begin;
+	std::deque<Client*>::iterator end;
+	_bcPart(client, reason);
+	
+	begin = this->_clientList.begin();
+	end = this->_clientList.end();
+	while (begin != end)
+	{
+		if ((*begin)->getHostmask() == client.getHostmask())
+		{
+			this->_clientList.erase(begin);
+			break;
+		}
+		begin++;
+	}
+	begin = this->_operatorList.begin();
+	end = this->_operatorList.end();
+	while (begin != end)
+	{
+		if ((*begin)->getHostmask() == client.getHostmask())
+		{
+			this->_operatorList.erase(begin);
+			break;
+		}
+		begin++;
+	}
+
+	begin = _clientList.begin();
+	end = _clientList.end();
+
+}
+
 Client*				Channel::findClient(std::string hostmask)
 {
 	std::deque<Client*>::iterator begin;
@@ -267,4 +301,9 @@ void	Channel::_bcEndName()
 		this->_fullBroadcast(RPL_ENDOFNAMES(member->getNickname(), this->_name));
 		begin++;
 	}
+}
+
+void	Channel::_bcPart(Client& client, std::string reason)
+{
+	this->_fullBroadcast(PARTRPL(client.getHostmask(), this->_name, reason));
 }

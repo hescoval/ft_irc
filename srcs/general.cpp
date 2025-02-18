@@ -113,6 +113,16 @@ string join_strings(std::vector<string> vec)
 	return ret;
 }
 
+string join_strings(std::vector<string> vec, int start_i)
+{
+	string ret = "";
+	for(size_t i = start_i; i < vec.size(); i++)
+	{
+		ret += vec[i];
+	}
+	return ret;
+}
+
 string readFile(const string& filePath) 
 {
     std::ifstream file(filePath.c_str());

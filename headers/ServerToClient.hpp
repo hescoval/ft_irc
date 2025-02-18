@@ -58,8 +58,8 @@
 #define RPL_NAMREPLY(nickname, prefix, channel, member)		(CLEXCH_RESPONSE(string("353"), nickname, string("="), channel) + prefix + member)
 #define RPL_ENDOFNAMES(nickname, channel)					(CLCHAN_RESPONSE(string("366"), nickname, channel) + string("End of /NAMES list"))
 
-
-
+//PART
+#define PARTRPL(hostmask, channel, reason)					(CLIENT_COMMAND(hostmask, string("PART"), channel) + string(" ") + reason)
 
 //KICK
 #define KICKRPL(hostmask, channel, target)					(CLIENT_COMMAND(hostmask, string("KICK"), channel) + target)

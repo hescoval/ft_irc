@@ -58,6 +58,7 @@ using std::endl;
 # define BRIGHT_WHITE	"\e[97m"
 
 string join_strings(std::vector<string> vec);
+string join_strings(std::vector<string> vec, int start_i);
 void trim(std::string &test);
 void replace_whitespace(string &input);
 string strUpper(std::string str);
