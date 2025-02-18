@@ -54,9 +54,18 @@
 #define RPL_NOTOPIC(nickname, channel)						(CLCHAN_RESPONSE(string("331"), nickname, channel) + "No Topic is set")
 #define RPL_TOPIC(nickname, channel, topic)					(CLCHAN_RESPONSE(string("332"), nickname, channel) + topic)
 
+//NAMES
+#define RPL_NAMREPLY(nickname, prefix, channel, member)		(CLEXCH_RESPONSE(string("353"), nickname, string("="), channel) + prefix + member)
+#define RPL_ENDOFNAMES(nickname, channel)					(CLCHAN_RESPONSE(string("366"), nickname, channel) + string("End of /NAMES list"))
+
+
+
+
 //KICK
 #define KICKRPL(hostmask, channel, target)					(CLIENT_COMMAND(hostmask, string("KICK"), channel) + target)
+
 //INVITE
 #define INVITERPL(hostmask, channel, target)				(CLIENT_COMMAND(hostmask, string("INVITE"), channel) + target)
+
 //MODE
 #define MODE(hostmask, target, flag)						(CLIENT_COMMAND(hostmaks, string("MODE"), target) + flag)

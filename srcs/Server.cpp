@@ -221,15 +221,10 @@ _fdIT Server::getUserPoll(int fd)
 // The holy grail
 void Server::ServerToUser(string message, int fd)
 {
-	int	test;
-
-    message += EOM;
     cout << "To user " << fd << " -> [" << message << "]" << endl;
-    test = send(fd, message.c_str(), message.size(), 0);
-	if (test == -1)
-		std::cout << "ERROR\n";
-	else
-		std::cout << test << std::endl;
+	
+    message += EOM;
+    send(fd, message.c_str(), message.size(), 0);
 }
 
 void Server::setCreationDate(const string str)

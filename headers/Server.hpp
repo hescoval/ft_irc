@@ -83,6 +83,7 @@ class Server
         void		USER(Command input, int fd);
         void		JOIN(Command input, int fd);
 		void		TOPIC(Command input, int fd);
+		void		NAMES(Command input, int fd);
 
     public:
 		Server(string port, string password);

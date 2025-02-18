@@ -8,7 +8,7 @@ void Server::initializeFunctions()
 	functions.insert(std::make_pair("USER", &Server::USER));
 	functions.insert(std::make_pair("JOIN", &Server::JOIN)); 
 	functions.insert(std::make_pair("TOPIC", &Server::TOPIC));
-	/* functions.insert(std::make_pair("NAMES", &Server::NAMES)); */
+	functions.insert(std::make_pair("NAMES", &Server::NAMES));
 }
 
 void Server::handleCMD(string message, int fd)
@@ -173,6 +173,7 @@ void Server::JOIN(Command input, int fd)
 		ServerToUser(RPL_NOTOPIC(client.getNickname(), channel->getName()), fd);
 	else
 		ServerToUser(RPL_TOPIC(client.getNickname(), channel->getName(), channel->getTopic()), fd);
+	this->NAMES(input, fd);
 	return;
 }
 
@@ -203,4 +204,42 @@ void	Server::TOPIC(Command input, int fd)
 			return ServerToUser(ERR_NOPRIVILEGES(client.getNickname()), fd);
 		channel->topic(client, input.getFullCommand());
 	}
+}
+
+void	Server::NAMES(Command input, int fd)
+{
+	Client		&client = getClient(fd);
+	Channel		*channel = getChannel(input.args[0]);
+
+	if (!channel)
+		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), input.args[0]), fd);
+	std::deque<Client*>::const_iterator cl_begin;
+	std::deque<Client*>::const_iterator cl_end;
+	std::deque<Client*>::const_iterator op_begin;
+	std::deque<Client*>::const_iterator op_end;
+
+	cl_begin = channel->getClients().begin();
+	cl_end = channel->getClients().end();
+	op_begin = channel->getOperators().begin();
+	op_end = channel->getOperators().end();
+	while (op_begin < op_end)
+	{
+		Client* op_member = *op_begin;
+		std::cout << std::endl << channel->getOperators().size() << std::endl << std::endl;
+		ServerToUser(RPL_NAMREPLY(client.getNickname(), string("@"), channel->getName(), op_member->getNickname()), fd);
+		op_begin++;
+	}
+	while (cl_begin < cl_end)
+	{
+		op_begin = channel->getOperators().begin();
+		while (op_begin < op_end && *cl_begin != *op_begin)
+			op_begin++;
+		if (*cl_begin != *op_begin)
+		{
+			Client* cl_member = *cl_begin;
+			ServerToUser(RPL_NAMREPLY(client.getNickname(), string("+"), channel->getName(), cl_member->getNickname()), fd);
+		}
+		cl_begin++;
+	}
+	ServerToUser(RPL_ENDOFNAMES(client.getNickname(), channel->getName()), fd);
 }

@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:35 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/17 22:46:45 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/17 23:58:19 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,12 +129,12 @@ unsigned char	Channel::getModes()  const
 	return (this->_modes);
 }
 
-std::deque<Client*>	Channel::getClients()  const
+const std::deque<Client*>&	Channel::getClients()  const
 {
-	return (this->_operatorList);
+	return (this->_clientList);
 }
 
-std::deque<Client*>	Channel::getOperators()  const
+const std::deque<Client*>&	Channel::getOperators()  const
 {
 	return (this->_operatorList);
 }
