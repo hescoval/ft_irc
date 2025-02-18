@@ -9,6 +9,8 @@ void Server::initializeFunctions()
 	functions.insert(std::make_pair("JOIN", &Server::JOIN)); 
 	functions.insert(std::make_pair("TOPIC", &Server::TOPIC));
 	functions.insert(std::make_pair("NAMES", &Server::NAMES));
+	functions.insert(std::make_pair("MODE", &Server::MODE));
+	functions.insert(std::make_pair("WHO", &Server::WHO));
 }
 
 void Server::handleCMD(string message, int fd)
@@ -144,9 +146,9 @@ void Server::USER(Command input, int fd)
 
 void Server::JOIN(Command input, int fd)
 {
-	Client				&client = getClient(fd);
-	Channel*			channel;
-	std::deque<Client*>	clientList;
+	Client					&client = getClient(fd);
+	Channel*				channel;
+	std::deque<Client*>*	clientList;
 	if (!client.getAuth())
 		return ServerToUser(ERR_NEEDPWD(client.getNickname()), fd);
 	if (!this->_channels.count(input.args[0]))
@@ -156,7 +158,7 @@ void Server::JOIN(Command input, int fd)
 	else
 	{
 		channel = this->getChannel(input.args[0]);
-		clientList = channel->getClients();
+		*clientList = channel->getClients();
 		if (!channel->findClient(client.getHostmask()))
 			return ServerToUser(ERR_ALREADYONCHANNEL(client.getNickname(), channel->getName()), fd);
 		else if (channel->getModes() == 1)
@@ -167,7 +169,7 @@ void Server::JOIN(Command input, int fd)
 			return ServerToUser(ERR_CHANNELISFULL(client.getNickname(), channel->getName()), fd);
 		else
 			channel->join(client);
-		}
+	}
 	ServerToUser(JOINRPL(client.getHostmask(), input.args[0]), fd);
 	if (channel->getTopic() == "")
 		ServerToUser(RPL_NOTOPIC(client.getNickname(), channel->getName()), fd);
@@ -242,4 +244,53 @@ void	Server::NAMES(Command input, int fd)
 		cl_begin++;
 	}
 	ServerToUser(RPL_ENDOFNAMES(client.getNickname(), channel->getName()), fd);
+}
+
+void	Server::MODE(Command input, int fd)
+{
+	Client		&client = getClient(fd);
+	Channel		*channel = getChannel(input.args[0]);
+
+	if (!channel)
+		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), input.args[0]), fd);
+}
+
+void	Server::WHO(Command input, int fd)
+{
+	if (input.args.empty())
+		return ;
+	Client		&client = getClient(fd);
+	Channel		*channel = getChannel(input.args[0]);
+
+	if (!channel)
+		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), input.args[0]), fd);
+
+	std::deque<Client*>::const_iterator cl_begin;
+	std::deque<Client*>::const_iterator cl_end;
+
+	cl_begin = channel->getClients().begin();
+	cl_end = channel->getClients().end();
+
+	while (cl_begin < cl_end)
+	{
+		Client* target_client = *cl_begin;
+		std::string status;
+
+		if (channel->isOperator(*target_client))
+			status += "@";
+		else
+			status += "+";
+		ServerToUser(RPL_WHOREPLY(
+			client.getNickname(),
+			channel->getName(),
+			target_client->getUsername(),
+			target_client->getHostname(),
+			SERVER_HOST,
+			target_client->getNickname(),
+			status,
+			target_client->getRealname()
+		), fd);
+		cl_begin++;
+	}
+	ServerToUser(RPL_ENDOFWHO(client.getNickname(), channel->getName()), fd);
 }

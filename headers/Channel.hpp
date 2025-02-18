@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:55 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/17 23:58:42 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/18 12:07:39 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,4 +58,5 @@ class Channel
 		size_t						getMaxClients() const;
 		Client*						findClient(std::string hostmask);
 		Client*						findOperator(std::string hostmask);
+		bool						isOperator(Client& client);
 };

@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:35 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/17 23:58:19 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/18 12:49:22 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -172,6 +172,23 @@ Client*				Channel::findOperator(std::string hostmask)
 			return (*begin);
 	}
 	return (NULL);
+}
+
+bool	Channel::isOperator(Client& client)
+{
+	const std::deque<Client*>& list = this->getOperators();
+	std::deque<Client*>::const_iterator op_begin;
+	std::deque<Client*>::const_iterator op_end;
+
+	op_begin = list.begin();
+	op_end = list.end();
+	while (op_begin < op_end)
+	{
+		if ((*op_begin)->getHostmask() == client.getHostmask())
+			return (true);
+		op_begin++;
+	}
+	return (false);
 }
 
 void	Channel::_broadcast(Client& client, string message)

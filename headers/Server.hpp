@@ -19,7 +19,7 @@
 #include <set>
 
 
-#define MAX_CLIENTS 3
+#define MAX_CLIENTS 5
 #define SERVER_NAMERPL ":42_IRC"
 #define SERVER_NAME "42_IRC"
 #define SERVER_HOST "localhost"
@@ -84,7 +84,8 @@ class Server
         void		JOIN(Command input, int fd);
 		void		TOPIC(Command input, int fd);
 		void		NAMES(Command input, int fd);
-
+		void		MODE(Command input, int fd);
+		void		WHO(Command input, int fd);
     public:
 		Server(string port, string password);
 		~Server();

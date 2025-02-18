@@ -68,4 +68,11 @@
 #define INVITERPL(hostmask, channel, target)				(CLIENT_COMMAND(hostmask, string("INVITE"), channel) + target)
 
 //MODE
-#define MODE(hostmask, target, flag)						(CLIENT_COMMAND(hostmaks, string("MODE"), target) + flag)
+#define MODERPL(hostmask, target, flag)						(CLIENT_COMMAND(hostmask, string("MODE"), target) + flag)
+
+
+//WHO
+#define WHORPL(hostmask, target)							(CLIENT_COMMAND(hostmask, string("WHO"), target))
+#define RPL_WHOREPLY(cli_nickname, channel, t_user, t_host, t_server, t_nick, t_status, t_real) \
+															(CLCHAN_RESPONSE(string("352"), cli_nickname, channel) + t_user + string(" ") + t_host + string(" ") + t_server + string(" ") + t_nick + string(" ") + t_status + string(" :0 ") + t_real)
+#define RPL_ENDOFWHO(nickname, channel)						(CLCHAN_RESPONSE(string("315"), nickname, channel) + string("End of WHO list"))
