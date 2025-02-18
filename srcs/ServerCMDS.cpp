@@ -148,7 +148,6 @@ void Server::JOIN(Command input, int fd)
 {
 	Client					&client = getClient(fd);
 	Channel*				channel;
-	std::deque<Client*>*	clientList;
 	if (!client.getAuth())
 		return ServerToUser(ERR_NEEDPWD(client.getNickname()), fd);
 	if (!this->_channels.count(input.args[0]))
@@ -158,14 +157,14 @@ void Server::JOIN(Command input, int fd)
 	else
 	{
 		channel = this->getChannel(input.args[0]);
-		*clientList = channel->getClients();
+		const std::deque<Client*>& clientList = channel->getClients();
 		if (!channel->findClient(client.getHostmask()))
 			return ServerToUser(ERR_ALREADYONCHANNEL(client.getNickname(), channel->getName()), fd);
 		else if (channel->getModes() == 1)
 			return ServerToUser(ERR_INVITEONLYCHAN(client.getNickname(), channel->getName()), fd);
 		else if (channel->getModes() == 2)
 			return ServerToUser(ERR_BADCHANNELKEY(client.getNickname(), channel->getName()), fd);
-		else if (clientList->size() == channel->getMaxClients())
+		else if (clientList.size() == channel->getMaxClients())
 			return ServerToUser(ERR_CHANNELISFULL(client.getNickname(), channel->getName()), fd);
 		else
 			channel->join(client);
