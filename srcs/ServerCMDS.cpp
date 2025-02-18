@@ -165,7 +165,7 @@ void Server::JOIN(Command input, int fd)
 			return ServerToUser(ERR_INVITEONLYCHAN(client.getNickname(), channel->getName()), fd);
 		else if (channel->getModes() == 2)
 			return ServerToUser(ERR_BADCHANNELKEY(client.getNickname(), channel->getName()), fd);
-		else if (clientList.size() == channel->getMaxClients())
+		else if (clientList->size() == channel->getMaxClients())
 			return ServerToUser(ERR_CHANNELISFULL(client.getNickname(), channel->getName()), fd);
 		else
 			channel->join(client);
