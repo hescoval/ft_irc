@@ -6,11 +6,12 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:35 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/18 12:49:22 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/18 14:04:41 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Channel.hpp"
+
 
 Channel::Channel()
 {
@@ -151,10 +152,11 @@ Client*				Channel::findClient(std::string hostmask)
 	
 	begin = this->_clientList.begin();
 	end = this->_clientList.end();
-	while (begin != end)
+	while (begin < end)
 	{
 		if ((*begin)->getHostmask() == hostmask)
 			return (*begin);
+		begin++;
 	}
 	return (NULL);
 }
@@ -198,7 +200,7 @@ void	Channel::_broadcast(Client& client, string message)
 	
 	begin = this->_clientList.begin();
 	end = this->_clientList.end();
-	while (begin != end)
+	while (begin < end)
 	{
 		Client* member = *begin;
 		if (member->getFd() != client.getFd())
@@ -220,4 +222,49 @@ void	Channel::_bcTopic(Client& client)
 void	Channel::_bcMessage(Client& client, std::string message)
 {
 	this->_broadcast(client, CLIENT_MESSAGE(client.getHostmask(), this->_name, message));
+}
+
+void	Channel::_fullBroadcast(string message)
+{
+	std::deque<Client*>::iterator begin;
+	std::deque<Client*>::iterator end;
+	
+	begin = this->_clientList.begin();
+	end = this->_clientList.end();
+	while (begin < end)
+	{
+		Client* member = *begin;
+		(*this->_server).ServerToUser(message, member->getFd());
+		begin++;
+	}
+}
+
+void	Channel::_bcName(Client& client, std::string prefix)
+{
+	std::deque<Client*>::iterator begin;
+	std::deque<Client*>::iterator end;
+	
+	begin = this->_clientList.begin();
+	end = this->_clientList.end();
+	while (begin < end)
+	{
+		Client* member = *begin;
+		this->_fullBroadcast(RPL_NAMREPLY(member->getNickname(), prefix, this->_name, client.getNickname()));
+		begin++;
+	}
+}
+
+void	Channel::_bcEndName()
+{
+	std::deque<Client*>::iterator begin;
+	std::deque<Client*>::iterator end;
+	
+	begin = this->_clientList.begin();
+	end = this->_clientList.end();
+	while (begin < end)
+	{
+		Client* member = *begin;
+		this->_fullBroadcast(RPL_ENDOFNAMES(member->getNickname(), this->_name));
+		begin++;
+	}
 }

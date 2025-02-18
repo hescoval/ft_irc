@@ -158,7 +158,7 @@ void Server::JOIN(Command input, int fd)
 	{
 		channel = this->getChannel(input.args[0]);
 		const std::deque<Client*>& clientList = channel->getClients();
-		if (!channel->findClient(client.getHostmask()))
+		if (channel->findClient(client.getHostmask()))
 			return ServerToUser(ERR_ALREADYONCHANNEL(client.getNickname(), channel->getName()), fd);
 		else if (channel->getModes() == 1)
 			return ServerToUser(ERR_INVITEONLYCHAN(client.getNickname(), channel->getName()), fd);
@@ -227,7 +227,7 @@ void	Server::NAMES(Command input, int fd)
 	{
 		Client* op_member = *op_begin;
 		std::cout << std::endl << channel->getOperators().size() << std::endl << std::endl;
-		ServerToUser(RPL_NAMREPLY(client.getNickname(), string("@"), channel->getName(), op_member->getNickname()), fd);
+		channel->_bcName(*op_member, "@");
 		op_begin++;
 	}
 	while (cl_begin < cl_end)
@@ -238,11 +238,11 @@ void	Server::NAMES(Command input, int fd)
 		if (*cl_begin != *op_begin)
 		{
 			Client* cl_member = *cl_begin;
-			ServerToUser(RPL_NAMREPLY(client.getNickname(), string("+"), channel->getName(), cl_member->getNickname()), fd);
+			channel->_bcName(*cl_member, "+");
 		}
 		cl_begin++;
 	}
-	ServerToUser(RPL_ENDOFNAMES(client.getNickname(), channel->getName()), fd);
+	channel->_bcEndName();
 }
 
 void	Server::MODE(Command input, int fd)

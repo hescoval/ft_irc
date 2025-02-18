@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:55 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/18 12:07:39 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/18 14:05:46 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,11 +32,12 @@ class Channel
 		std::deque<Client*>	_clientList;
 		std::deque<Client*>	_operatorList;
 		void				_broadcast(Client& client, string message);
+		void				_fullBroadcast(string message);
 		void				_bcJoin(Client& client);
 		void				_bcTopic(Client& client);
-		void				_bcMessage(Client& source, std::string message);
+		void				_bcMessage(Client& client, std::string message);
 		
-	public:
+		public:
 		Channel();
 		Channel(std::string name, Server& server, Client& client);
 		Channel(const Channel& obj);
@@ -59,4 +60,7 @@ class Channel
 		Client*						findClient(std::string hostmask);
 		Client*						findOperator(std::string hostmask);
 		bool						isOperator(Client& client);
+		void						_bcName(Client& client, std::string prefix);
+		void						_bcEndName();
+		
 };
