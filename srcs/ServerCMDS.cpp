@@ -16,6 +16,7 @@ void Server::initializeFunctions()
 	functions.insert(std::make_pair("INVITE", &Server::INVITE));
 	functions.insert(std::make_pair("PING", &Server::PING));
 	functions.insert(std::make_pair("MOTD", &Server::MOTD));
+	functions.insert(std::make_pair("PRIVMSG", &Server::PRIVMSG));
 }
 
 void Server::PING(Command input, int fd)
@@ -179,7 +180,7 @@ void Server::JOIN(Command input, int fd)
 	if (!client.getAuth())
 		return ServerToUser(ERR_NEEDPWD(client.getNickname()), fd);
 
-	if(input.args.size() == 0)
+	if(input.args.size() < 1)
 		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
 
 	if (!this->_channels.count(input.args[0]))
@@ -196,7 +197,7 @@ void Server::JOIN(Command input, int fd)
 			return ServerToUser(ERR_INVITEONLYCHAN(client.getNickname(), channel->getName()), fd);
 		else if (channel->getModes() & MODE_KEY && (input.args.size() != 2 || input.args[1] != channel->getPassword()))
 			return ServerToUser(ERR_BADCHANNELKEY(client.getNickname(), channel->getName()), fd);
-		else if (channel->getModes() & MODE_LIMIT && clientList.size() == channel->getMaxClients())
+		else if (channel->getModes() & MODE_LIMIT && clientList.size() >= channel->getMaxClients())
 			return ServerToUser(ERR_CHANNELISFULL(client.getNickname(), channel->getName()), fd);
 		else
 			channel->join(client);
@@ -213,6 +214,10 @@ void Server::JOIN(Command input, int fd)
 void	Server::TOPIC(Command input, int fd)
 {
 	Client		&client = getClient(fd);
+
+	if(input.args.size() < 1)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+
 	Channel		*channel = getChannel(input.args[0]);
 	
 	if (!channel)
@@ -242,6 +247,10 @@ void	Server::TOPIC(Command input, int fd)
 void	Server::NAMES(Command input, int fd)
 {
 	Client		&client = getClient(fd);
+
+	if(input.args.size() < 1)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+
 	Channel		*channel = getChannel(input.args[0]);
 
 	if (!channel)
@@ -270,7 +279,7 @@ void	Server::NAMES(Command input, int fd)
 		if (*cl_begin != *op_begin)
 		{
 			Client* cl_member = *cl_begin;
-			channel->_bcName(*cl_member, "+");
+			channel->_bcName(*cl_member, "");
 		}
 		cl_begin++;
 	}
@@ -300,7 +309,7 @@ void	Server::MODE(Command input, int fd)
 		return ServerToUser(RPL_CREATIONTIME(client.getNickname(), channel->getName(), channel->getTime()), fd);
 	}
 	else if (!channel->isOperator(client))
-		return ServerToUser(ERR_CHANOPRIVSNEEDED(client.getNickname(), channel->getName()), 2);
+		return ServerToUser(ERR_CHANOPRIVSNEEDED(client.getNickname(), channel->getName()), fd);
 	try
 	{
 		getFlags(input, plus, minus);
@@ -321,6 +330,8 @@ void	Server::MODE(Command input, int fd)
 	
 	try
 	{
+		input.plus = plus;
+		input.minus = minus;
 		flagOrder(input);
 	}
 	catch (int e)
@@ -328,8 +339,6 @@ void	Server::MODE(Command input, int fd)
 		(void) e;
 		return ServerToUser(RPL_UMODEUNKOWNFLAG(client.getNickname()), fd);
 	}
-	input.plus = plus;
-	input.minus = minus;
 	channel->changeModes(client, input);
 }
 
@@ -379,10 +388,16 @@ void	Server::flagOrder(Command& input)
 		{
 			input.flags[i] = str[i];
 			if (str[i] == 'l' && input.plus.find(str[i]) != string::npos)
+			{
 				checkLimit(input.args[2 + j]);
-			if (str[i] == 'k' && input.plus.find(str[i]) != string::npos)
+				input.flagArgs[string(&str[i])] = input.args[2 + j++];
+			}
+			else if (str[i] == 'k' && input.plus.find(str[i]) != string::npos)
+			{
 				checkKey(input.args[2 + j]);
-			if (str[i] == 'l' || str[i] == 'k' || str[i] == 'o')
+				input.flagArgs[string(&str[i])] = input.args[2 + j++];
+			}
+			else if (str[i] == 'o')
 				input.flagArgs[string(&str[i])] = input.args[2 + j++];
 		}
 		i++;
@@ -414,6 +429,7 @@ void	Server::checkKey(string& str)
 			throw (-1);
 		if (str.size() < 4)
 			throw (-1);
+		i++;
 	}
 }
 
@@ -518,6 +534,9 @@ void Server::PART(Command input, int fd)
 		reason = "Leaving";
 	}
 
+	if(input.args.size() < 1)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+
 	std::vector<string> all_channels = split(input.args[0], ",");
 	
 	for(size_t i = 0; i < all_channels.size(); i++)
@@ -568,7 +587,12 @@ void	Server::KICK(Command input, int fd)
 void	Server::INVITE(Command Input, int fd)
 {
 	Client& client = getClient(fd);
+
+	if(Input.args.size() < 2)
+		return ServerToUser(ERR_NEEDMOREPARAMS(Input.command, client.getNickname()), fd);
+
 	Channel* channel = getChannel(Input.args[1]);
+
 
 	if(!channel)
 		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), Input.args[1]), fd);
@@ -580,9 +604,6 @@ void	Server::INVITE(Command Input, int fd)
 	if(!target)
 		return ServerToUser(ERR_USERNOTFOUND(client.getHostmask(), Input.args[0]), fd);
 
-	if(Input.args.size() < 2)
-		return ServerToUser(ERR_NEEDMOREPARAMS(Input.command, client.getNickname()), fd);
-
 	if(!channel->findClient(client.getHostmask()))
 		return ServerToUser(ERR_NOTONCHANNEL(client.getNickname(), channel->getName()), fd);
 	
@@ -590,4 +611,36 @@ void	Server::INVITE(Command Input, int fd)
 	ServerToUser(RPL_INVITING(client.getNickname(), target->getNickname(), channel->getName()), fd);
 	ServerToUser(INVITERPL(client.getHostmask(), target->getNickname(), channel->getName()), target->getFd());
 	channel->invite(target);
+}
+
+void		Server::PRIVMSG(Command input, int fd)
+{
+	Client&		client = getClient(fd);
+
+	if(input.args.size() < 1)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+
+	std::stringstream ss;
+	std::string	message;
+	
+	ss.str(input.getFullCommand());
+	getline(ss, message, ':');
+	getline(ss, message);
+	
+	if (input.args[0][0] == '#')
+	{
+		Channel*	target = getChannel(input.args[0]);
+		if(!target)
+			return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), input.args[0]), fd);
+		if (!target->findClient(client.getHostmask()))
+			return ServerToUser(ERR_NOTONCHANNEL(client.getNickname(), target->getName()), fd);
+		target->bcMessage(client, message);
+	}
+	else
+	{
+		Client*		target = this->getClientByNick(input.args[0]);
+		if(!target)
+			return ServerToUser(ERR_USERNOTFOUND(client.getHostmask(), input.args[0]), fd);
+		return ServerToUser(PRIVMSGRPL(client.getHostmask(), target->getNickname(), message), target->getFd());
+	}
 }

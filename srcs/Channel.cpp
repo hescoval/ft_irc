@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:35 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/20 14:23:59 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/20 20:26:50 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,17 +15,21 @@
 
 Channel::Channel()
 {
+	std::time_t now = std::time(NULL);
+	std::tm* t = std::gmtime(&now);
 	this->_name = "";
 	this->_password = "";
 	this->_topic = "";
 	this->_server = NULL;
 	this->_modes = 0;
 	this->_maxClient = 0;
-	this->_creationTime = CurrentDate() + string(" ") + CurrentTime();
+	this->_creationTime = timeTtoString(std::mktime(t));
 }
 
 Channel::Channel(std::string name, Server& server, Client& client)
 {
+	std::time_t now = std::time(NULL);
+	std::tm* t = std::gmtime(&now);
 	this->_name = name;
 	this->_password = "";
 	this->_topic = "";
@@ -35,7 +39,7 @@ Channel::Channel(std::string name, Server& server, Client& client)
 	this->_clientList.push_back(&client);
 	this->_operatorList.push_back(&client);
 	this->_inviteList.push_back(&client);
-	this->_creationTime = CurrentDate() + string(" ") + CurrentTime();
+	this->_creationTime = timeTtoString(std::mktime(t));
 }
 
 Channel::Channel(const Channel& obj)
@@ -97,7 +101,7 @@ void	Channel::kick(string kicker, string target, string reason)
 {
 	Client* target_client = this->findClientByNick(target);
 
-	this->_broadcast(*this->findClient(kicker), KICKRPL(kicker, this->_name, target, reason));
+	this->_fullBroadcast(KICKRPL(kicker, this->_name, target, reason));
 
 	_clientList.erase(find(_clientList.begin(), _clientList.end(), target_client));
 	if(this->isOperator(*target_client))
@@ -145,15 +149,15 @@ void	Channel::changeModes(Client& client, Command& input)
 			this->_password = "";
 			this->_modes &= ~MODE_KEY;
 		}
-		if ((*begin).second == "o"  && input.plus.find('k') != string::npos)
+		if ((*begin).second == "o"  && input.plus.find('o') != string::npos)
 		{
 			Client* cl = (this->findClientByNick(input.flagArgs["o"]));
 			if (!cl)
 				this->_server->ServerToUser(ERR_NOTONCHANNEL(client.getNickname(), this->_name), client.getFd());
-			else if (!this->isOperator(*cl))
+			else
 				this->addOperator(*cl);
 		}
-		else if ((*begin).second == "o"  && input.minus.find('k') != string::npos)
+		else if ((*begin).second == "o"  && input.minus.find('o') != string::npos)
 		{
 			Client* cl = (this->findClientByNick(input.flagArgs["o"]));
 			if (!cl)
@@ -173,6 +177,7 @@ void	Channel::changeModes(Client& client, Command& input)
 		i++;
 	}
 	this->_server->ServerToUser(SERVER_NAMERPL + string(" 324 ") + client.getNickname() + string(" ") + all_args, client.getFd());
+	_broadcast(client, MODERPL(client.getHostmask(), "", all_args));
 }
 
 
@@ -218,7 +223,7 @@ string	Channel::formattedModes()
 
 void	Channel::addOperator(Client& client)
 {
-	if (this->isOperator(client))
+	if (!this->isOperator(client))
 		this->_operatorList.push_back(&client);
 }
 
@@ -281,7 +286,7 @@ void	Channel::removeUser(Client& client, string reason)
 
 }
 
-Client*				Channel::findClientByNick(std::string nickname)
+Client*	Channel::findClientByNick(std::string nickname)
 {
 	std::deque<Client*>::iterator begin;
 	std::deque<Client*>::iterator end;
@@ -324,6 +329,7 @@ Client*	Channel::findOperator(std::string hostmask)
 	{
 		if ((*begin)->getHostmask() == hostmask)
 			return (*begin);
+		begin++;
 	}
 	return (NULL);
 }
@@ -388,9 +394,9 @@ void	Channel::_bcTopic(Client& client)
 	this->_broadcast(client, TOPICRPL(client.getHostmask(), this->_name, this->_topic));
 }
 
-void	Channel::_bcMessage(Client& client, std::string message)
+void	Channel::bcMessage(Client& client, std::string message)
 {
-	this->_broadcast(client, CLIENT_MESSAGE(client.getHostmask(), this->_name, message));
+	this->_broadcast(client, PRIVMSGRPL(client.getHostmask(), this->_name, message));
 }
 
 void	Channel::_fullBroadcast(string message)

@@ -24,6 +24,13 @@ string CurrentTime()
 	return time_stream.str();
 }
 
+string	timeTtoString(time_t value)
+{
+	std::ostringstream oss;
+	oss << value;
+	return oss.str();
+}
+
 bool checkValidChars(const std::string& str, const std::string& charset)
 {
 	return !(str.find_first_not_of(charset) != std::string::npos);

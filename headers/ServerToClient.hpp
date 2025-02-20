@@ -53,7 +53,7 @@
 #define ERR_ALREADYONCHANNEL(nickname, channel)				(CLCHAN_RESPONSE(string("984"), nickname, channel) + string("Already on channel."))
 
 //TOPIC
-#define TOPICRPL(hostmask, channel, topic)					(CLIENT_COMMAND(hostmask, string("TOPIC"), channel))
+#define TOPICRPL(hostmask, channel, topic)					(CLIENT_COMMAND(hostmask, string("TOPIC"), channel) + string(" ") + topic)
 #define RPL_NOTOPIC(nickname, channel)						(CLCHAN_RESPONSE(string("331"), nickname, channel) + "No Topic is set")
 #define RPL_TOPIC(nickname, channel, topic)					(CLCHAN_RESPONSE(string("332"), nickname, channel) + topic)
 
@@ -74,23 +74,26 @@
 
 //MODE
 #define MODERPL(hostmask, target, flag)						(CLIENT_COMMAND(hostmask, string("MODE"), target) + flag)
-#define RPL_CHANNELMODEIS(nickname, channel, modes, args)	(CLCHAN_RESPONSE(string("324"), nickname, channel) + string(" ") + modes + string(" ") + args)
-#define RPL_CREATIONTIME(nickname, channel, creationtime)	(CLCHAN_RESPONSE(string("329"), nickname, channel) + string(" ") + creationtime)
+#define RPL_CHANNELMODEIS(nickname, channel, modes, args)	(CLCHAN_RESPONSE(string("324"), nickname, channel) + modes + string(" ") + args)
+#define RPL_CREATIONTIME(nickname, channel, creationtime)	(SERVER_NAMERPL + string(" 329 ") + nickname + string(" ") + channel + string(" ") + creationtime)
 #define RPL_UMODEUNKOWNFLAG(nickname)						(CLIENT_RESPONSE(string("501"), nickname) + string("Unknown MODE flag"))
 
 //MOTD
-#define RPL_MOTDSTART(hostmask)						(CLIENT_RESPONSE(string("375"), hostmask) + string(" :- ") + SERVER_NAME + string(" Message of the Day - "))
-#define RPL_MOTD(hostmask, line)					(CLIENT_RESPONSE(string("372"), hostmask) + string(" :") + line)
-#define RPL_ENDOFMOTD(hostmask)						(CLIENT_RESPONSE(string("376"), hostmask) + string("End of /MOTD command."))
+#define RPL_MOTDSTART(hostmask)								(CLIENT_RESPONSE(string("375"), hostmask) + string(" :- ") + SERVER_NAME + string(" Message of the Day - "))
+#define RPL_MOTD(hostmask, line)							(CLIENT_RESPONSE(string("372"), hostmask) + string(" :") + line)
+#define RPL_ENDOFMOTD(hostmask)								(CLIENT_RESPONSE(string("376"), hostmask) + string("End of /MOTD command."))
 
 //PONG
-#define PONG(token)									(SERVER_NAMERPL + string(" PONG ") + SERVER_NAME + " " + token)
+#define PONG(token)											(SERVER_NAMERPL + string(" PONG ") + SERVER_NAME + " " + token)
 
 //WHO
 #define WHORPL(hostmask, target)							(CLIENT_COMMAND(hostmask, string("WHO"), target))
 #define RPL_WHOREPLY(cli_nickname, channel, t_user, t_host, t_server, t_nick, t_status, t_real) \
 															(CLCHAN_RESPONSE(string("352"), cli_nickname, channel) + t_user + string(" ") + t_host + string(" ") + t_server + string(" ") + t_nick + string(" ") + t_status + string(" :0 ") + t_real)
 #define RPL_ENDOFWHO(nickname, channel)						(CLCHAN_RESPONSE(string("315"), nickname, channel) + string("End of WHO list"))
+
+//PRIVMSG
+#define PRIVMSGRPL(hostmask, target, message)				(CLIENT_COMMAND(hostmask, string("PRIVMSG"), target) + string(" :") + message)
 
 
 #define MODE_INVITEONLY	0b0001

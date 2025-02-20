@@ -99,6 +99,7 @@ class Server
         void        INVITE(Command input, int fd);
 		void        PING(Command input, int fd);
 		void        MOTD(Command input, int fd);
+		void		PRIVMSG(Command input, int fd);
 
 		
     public:

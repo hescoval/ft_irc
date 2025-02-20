@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <deque>
 #include <algorithm>
+#include <csignal>
 
 /*
 	The using keyword is only forbidden if you use it for entire namespaces
@@ -69,6 +70,7 @@ void				strReplace(string &str, const string &from, const string &to);
 std::vector<string>	split(string str, string delims);
 string				CurrentDate();
 string				CurrentTime();
+string				timeTtoString(time_t value);
 string				readFile(const string& filePath);
 bool				flagExists(string str, char c);
 bool				uniqueChar(string str, char c);

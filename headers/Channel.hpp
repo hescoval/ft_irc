@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:55 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/20 14:01:58 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/20 20:02:44 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,9 +37,8 @@ class Channel
 		void				_fullBroadcast(string message);
 		void				_bcJoin(Client& client);
 		void				_bcTopic(Client& client);
-		void				_bcMessage(Client& client, std::string message);
 		void				_bcPart(Client& client, std::string reason);
-
+		
 		public:
 		Channel();
 		Channel(std::string name, Server& server, Client& client);
@@ -72,5 +71,6 @@ class Channel
 		bool						isInvited(Client& client);
 		void						_bcName(Client& client, std::string prefix);
 		void						_bcEndName();
+		void						bcMessage(Client& client, std::string message);
 		
 };
