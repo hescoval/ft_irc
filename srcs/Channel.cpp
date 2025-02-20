@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:35 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/20 13:35:06 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/20 14:23:59 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ Channel::Channel(std::string name, Server& server, Client& client)
 	this->_maxClient = 0;
 	this->_clientList.push_back(&client);
 	this->_operatorList.push_back(&client);
+	this->_inviteList.push_back(&client);
 	this->_creationTime = CurrentDate() + string(" ") + CurrentTime();
 }
 
@@ -47,6 +48,7 @@ Channel::Channel(const Channel& obj)
 	this->_maxClient = obj.getMaxClients();
 	this->_clientList = obj.getClients();
 	this->_operatorList = obj.getOperators();
+	this->_inviteList = obj.getInviteList();
 	this->_creationTime = obj.getTime();
 }
 
@@ -91,55 +93,59 @@ void	Channel::topic(Client& client, std::string message)
 	this->_bcTopic(client);
 }
 
-void	Channel::kick(Client& client, std::string target)
+void	Channel::kick(string kicker, string target, string reason)
 {
-	(void) client;
-	(void) target;
+	Client* target_client = this->findClientByNick(target);
+
+	this->_broadcast(*this->findClient(kicker), KICKRPL(kicker, this->_name, target, reason));
+
+	_clientList.erase(find(_clientList.begin(), _clientList.end(), target_client));
+	if(this->isOperator(*target_client))
+		_operatorList.erase(find(_operatorList.begin(), _operatorList.end(), target_client));
 }
 
-void	Channel::invite(Client& client, std::string target)
+void	Channel::invite(Client* target)
 {
-	(void) client;
-	(void) target;
+	if(find(_inviteList.begin(), _inviteList.end(), target) == _inviteList.end())
+		_inviteList.push_back(target);
 }
 
 void	Channel::changeModes(Client& client, Command& input)
 {
 	(void) client;
-	unsigned char	mode = 0;
 	std::map<int, string>::iterator begin = input.flags.begin();
 	std::map<int, string>::iterator end = input.flags.end();
 	while (begin != end)
 	{
-		if ((*begin).second == "i" && input.plus.find('i') == string::npos)
+		if ((*begin).second == "i" && input.plus.find('i') != string::npos)
 			this->_modes |= MODE_INVITEONLY;
-		else if ((*begin).second == "i" && input.minus.find('i')  == string::npos)
+		else if ((*begin).second == "i" && input.minus.find('i')  != string::npos)
 			this->_modes &= ~MODE_INVITEONLY;
-		if ((*begin).second == "t"  && input.plus.find('t') == string::npos)
+		if ((*begin).second == "t"  && input.plus.find('t') != string::npos)
 			this->_modes |= MODE_TOPIC;
-		else if ((*begin).second == "t" && input.minus.find('t')  == string::npos)
+		else if ((*begin).second == "t" && input.minus.find('t')  != string::npos)
 			this->_modes &= ~MODE_TOPIC;
-		if ((*begin).second == "l"  && input.plus.find('l') == string::npos)
+		if ((*begin).second == "l"  && input.plus.find('l') != string::npos)
 		{
 			this->_maxClient = std::strtol(input.flagArgs["l"].c_str(), NULL, 10);
 			this->_modes |= MODE_LIMIT;
 		}
-		else if ((*begin).second == "l" && input.minus.find('l') == string::npos)
+		else if ((*begin).second == "l" && input.minus.find('l') != string::npos)
 		{
 			this->_maxClient = 0;
 			this->_modes &= ~MODE_LIMIT;
 		}
-		if ((*begin).second == "k" && input.plus.find('k') == string::npos)
+		if ((*begin).second == "k" && input.plus.find('k') != string::npos)
 		{
 			this->_password = input.flagArgs["k"];
 			this->_modes |= MODE_KEY;
 		}
-		else if ((*begin).second == "k" && input.minus.find('k') == string::npos)
+		else if ((*begin).second == "k" && input.minus.find('k') != string::npos)
 		{
 			this->_password = "";
 			this->_modes &= ~MODE_KEY;
 		}
-		if ((*begin).second == "o"  && input.plus.find('k') == string::npos)
+		if ((*begin).second == "o"  && input.plus.find('k') != string::npos)
 		{
 			Client* cl = (this->findClientByNick(input.flagArgs["o"]));
 			if (!cl)
@@ -147,7 +153,7 @@ void	Channel::changeModes(Client& client, Command& input)
 			else if (!this->isOperator(*cl))
 				this->addOperator(*cl);
 		}
-		else if ((*begin).second == "o"  && input.minus.find('k') == string::npos)
+		else if ((*begin).second == "o"  && input.minus.find('k') != string::npos)
 		{
 			Client* cl = (this->findClientByNick(input.flagArgs["o"]));
 			if (!cl)
@@ -224,6 +230,11 @@ const std::deque<Client*>&	Channel::getClients()  const
 const std::deque<Client*>&	Channel::getOperators()  const
 {
 	return (this->_operatorList);
+}
+
+const std::deque<Client*>&	Channel::getInviteList()  const
+{
+	return (this->_inviteList);
 }
 
 size_t	Channel::getMaxClients()  const
@@ -330,6 +341,23 @@ bool	Channel::isOperator(Client& client)
 		if ((*op_begin)->getHostmask() == client.getHostmask())
 			return (true);
 		op_begin++;
+	}
+	return (false);
+}
+
+bool	Channel::isInvited(Client& client)
+{
+	const std::deque<Client*>& list = this->getInviteList();
+	std::deque<Client*>::const_iterator iv_begin;
+	std::deque<Client*>::const_iterator iv_end;
+
+	iv_begin = list.begin();
+	iv_end = list.end();
+	while (iv_begin < iv_end)
+	{
+		if ((*iv_begin)->getHostmask() == client.getHostmask())
+			return (true);
+		iv_begin++;
 	}
 	return (false);
 }

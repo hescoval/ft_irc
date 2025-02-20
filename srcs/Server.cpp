@@ -173,7 +173,7 @@ void Server::checkClientRequest(int _fd)
 			return;
 		
         int bytes_read = 0;
-		string message;
+		string message = it->second._buffer;
         readfd(_fd, message, bytes_read);
         if(bytes_read == 0)
         {
@@ -181,9 +181,13 @@ void Server::checkClientRequest(int _fd)
             return;
         }
 
-        std::vector<string> splits = split(message, EOM);
+        it->second._buffer = message;
+        if(it->second._buffer.find(EOM) == string::npos)
+            return;
+        std::vector<string> splits = split(it->second._buffer, EOM);
         for(size_t i = 0; i < splits.size(); i++)
             handleCMD(splits[i], _fd);
+        it->second._buffer = "";
 	}
 	catch (const std::exception &e)
 	{
@@ -199,7 +203,7 @@ void Server::readfd(int fd, string& message, int& bytes_read)
 	if (bytes_read == -1)
 		throw std::runtime_error("Error: Cannot read from socket");
 
-	message = string(buffer, bytes_read);
+	message += string(buffer, bytes_read);
 }
 
 Client& Server::getClient(int fd)
@@ -208,6 +212,14 @@ Client& Server::getClient(int fd)
     if(it != _Clients.end())
         return it->second;
     throw std::runtime_error("Can't find user");
+}
+
+Client* Server::getClientByNick(string nick)
+{
+    for(_clientIT it = _Clients.begin(); it != _Clients.end(); ++it)
+        if (it->second.getNickname() == nick)
+            return &it->second;
+    return NULL;
 }
 
 _fdIT Server::getUserPoll(int fd)

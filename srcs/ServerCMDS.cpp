@@ -12,6 +12,18 @@ void Server::initializeFunctions()
 	functions.insert(std::make_pair("MODE", &Server::MODE));
 	functions.insert(std::make_pair("WHO", &Server::WHO));
 	functions.insert(std::make_pair("PART", &Server::PART));
+	functions.insert(std::make_pair("KICK", &Server::KICK));
+	functions.insert(std::make_pair("INVITE", &Server::INVITE));
+	functions.insert(std::make_pair("PING", &Server::PING));
+	functions.insert(std::make_pair("MOTD", &Server::MOTD));
+}
+
+void Server::PING(Command input, int fd)
+{
+	if(input.args.size() == 0)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, getClient(fd).getNickname()), fd);
+	
+	ServerToUser(PONG(input.args[0]), fd);
 }
 
 void Server::handleCMD(string message, int fd)
@@ -32,6 +44,20 @@ void Server::handleCMD(string message, int fd)
 		ServerToUser(ERR_COMMANDNOTFND(input.command, client.getNickname()), fd);
 }
 
+void Server::MOTD(Command input, int fd)
+{
+	(void) input;
+	Client& client = getClient(fd);
+	ServerToUser(RPL_MOTDSTART(client.getHostmask()), fd);
+	
+	string file = readFile("srcs/motd.txt");
+	std::vector<string> lines = split(file, "\n");
+	for(size_t i = 0; i < lines.size(); i++)
+		ServerToUser(RPL_MOTD(client.getNickname(), lines[i]), fd);
+
+	ServerToUser(RPL_ENDOFMOTD(client.getHostmask()), fd);
+}
+
 void Server::FinishRegistration(Command input, int fd)
 {
 	Client& client = getClient(fd);
@@ -48,6 +74,7 @@ void Server::FinishRegistration(Command input, int fd)
 	ServerToUser(RPL_WELCOME(client.getHostmask(), client.getNickname()), fd);
 	ServerToUser(RPL_YOURHOST(client.getNickname()), fd);
 	ServerToUser(RPL_CREATED(getCreationDate(), getCreationTime(), client.getNickname()), fd);
+	MOTD(input, fd);
 	cout << "Fd number " << fd << " finished his registration" << endl;
 	cout << "Nickname: " CYAN << client.getNickname() << RESET << endl;
 	cout << "Username: " CYAN << client.getUsername() << RESET << endl;
@@ -151,6 +178,10 @@ void Server::JOIN(Command input, int fd)
 	Channel*				channel;
 	if (!client.getAuth())
 		return ServerToUser(ERR_NEEDPWD(client.getNickname()), fd);
+
+	if(input.args.size() == 0)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+
 	if (!this->_channels.count(input.args[0]))
 	{
 		channel = &this->addChannel(input.args[0], client);
@@ -161,7 +192,7 @@ void Server::JOIN(Command input, int fd)
 		const std::deque<Client*>& clientList = channel->getClients();
 		if (channel->findClient(client.getHostmask()))
 			return ServerToUser(ERR_ALREADYONCHANNEL(client.getNickname(), channel->getName()), fd);
-		else if (channel->getModes() & MODE_INVITEONLY && channel->getINVITE())
+		else if (channel->getModes() & MODE_INVITEONLY && !channel->isInvited(client))
 			return ServerToUser(ERR_INVITEONLYCHAN(client.getNickname(), channel->getName()), fd);
 		else if (channel->getModes() & MODE_KEY && (input.args.size() != 2 || input.args[1] != channel->getPassword()))
 			return ServerToUser(ERR_BADCHANNELKEY(client.getNickname(), channel->getName()), fd);
@@ -202,7 +233,7 @@ void	Server::TOPIC(Command input, int fd)
 	{
 		if (input.getFullCommand().find(':') == string::npos)
 			return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
-		if ((channel->getModes() & MODE_TOPIC == MODE_TOPIC) && !channel->findOperator(client.getHostmask()))
+		if ((channel->getModes() & MODE_TOPIC) && !channel->findOperator(client.getHostmask()))
 			return ServerToUser(ERR_NOPRIVILEGES(client.getNickname()), fd);
 		channel->topic(client, input.getFullCommand());
 	}
@@ -347,9 +378,9 @@ void	Server::flagOrder(Command& input)
 		if (validFlag(str[i]))
 		{
 			input.flags[i] = str[i];
-			if (str[i] == 'l')
+			if (str[i] == 'l' && input.plus.find(str[i]) != string::npos)
 				checkLimit(input.args[2 + j]);
-			if (str[i] == 'k')
+			if (str[i] == 'k' && input.plus.find(str[i]) != string::npos)
 				checkKey(input.args[2 + j]);
 			if (str[i] == 'l' || str[i] == 'k' || str[i] == 'o')
 				input.flagArgs[string(&str[i])] = input.args[2 + j++];
@@ -369,7 +400,8 @@ void	Server::checkLimit(string& str)
 			throw (-1);
 		i++;
 	}
-	if (strtol(str.c_str(), NULL, 10) > std::numeric_limits<int>::max())
+	long l = strtol(str.c_str(), NULL, 10);
+	if (l > std::numeric_limits<int>::max() || l < 1)
 		throw(-1);
 }
 
@@ -378,7 +410,7 @@ void	Server::checkKey(string& str)
 	int i = 0;
 	while (str[i])
 	{
-		if (std::isblank(str[i]))
+		if (std::iswblank(str[i]))
 			throw (-1);
 		if (str.size() < 4)
 			throw (-1);
@@ -504,4 +536,58 @@ void Server::PART(Command input, int fd)
 
 		channel->removeUser(client, reason);
 	}
+}
+
+void	Server::KICK(Command input, int fd)
+{
+	Client &client = getClient(fd);
+	string kicker = client.getHostmask();
+	Channel *channel = getChannel(input.args[0]);
+	string reason = join_strings(input.args, 2);
+	if(reason == "")
+		reason = "Behave";
+
+	if(input.args.size() < 2)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+
+	if(!channel)
+		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), input.args[0]), fd);
+
+	if(!channel->findClient(client.getHostmask()))
+		return ServerToUser(ERR_NOTONCHANNEL(client.getNickname(), channel->getName()), fd);
+
+	if(!channel->findOperator(client.getHostmask()))
+		return ServerToUser(ERR_CHANOPRIVSNEEDED(client.getNickname(), channel->getName()), fd);
+
+	Client *target = channel->findClientByNick(input.args[1]);
+	if(!target)
+		return ServerToUser(ERR_USERNOTINCHANNEL(client.getNickname(), input.args[1], channel->getName()), fd);
+	channel->kick(kicker, target->getNickname(), reason);
+}
+
+void	Server::INVITE(Command Input, int fd)
+{
+	Client& client = getClient(fd);
+	Channel* channel = getChannel(Input.args[1]);
+
+	if(!channel)
+		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), Input.args[1]), fd);
+
+	if(channel->findClientByNick(Input.args[0]))
+		return ServerToUser(ERR_USERONCHANNEL(client.getNickname(), Input.args[0], channel->getName()), fd);
+
+	Client* target = getClientByNick(Input.args[0]);	
+	if(!target)
+		return ServerToUser(ERR_USERNOTFOUND(client.getHostmask(), Input.args[0]), fd);
+
+	if(Input.args.size() < 2)
+		return ServerToUser(ERR_NEEDMOREPARAMS(Input.command, client.getNickname()), fd);
+
+	if(!channel->findClient(client.getHostmask()))
+		return ServerToUser(ERR_NOTONCHANNEL(client.getNickname(), channel->getName()), fd);
+	
+
+	ServerToUser(RPL_INVITING(client.getNickname(), target->getNickname(), channel->getName()), fd);
+	ServerToUser(INVITERPL(client.getHostmask(), target->getNickname(), channel->getName()), target->getFd());
+	channel->invite(target);
 }

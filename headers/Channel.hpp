@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:55 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/18 22:52:32 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/20 14:01:58 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ class Channel
 		Server*				_server;
 		unsigned char		_modes;
 		size_t				_maxClient;
+		std::deque<Client*> _inviteList;
 		std::deque<Client*>	_clientList;
 		std::deque<Client*>	_operatorList;
 		string				_creationTime;
@@ -48,8 +49,8 @@ class Channel
 
 		void						join(Client& client);
 		void						topic(Client& source, std::string message = "");
-		void						kick(Client& source, std::string target);
-		void						invite(Client& source, std::string target);
+		void						kick(string kicker, string target, string reason);
+		void						invite(Client* target);
 		void						changeModes(Client& client, Command& input);
 		std::string				 	getName() const;
 		std::string					getPassword() const;
@@ -60,13 +61,15 @@ class Channel
 		void						addOperator(Client& client);
 		const std::deque<Client*>&	getClients() const;
 		const std::deque<Client*>&	getOperators() const;
+		const std::deque<Client*>&	getInviteList() const;
 		size_t						getMaxClients() const;
 		string						getTime() const;
-		Client*						findClientByNick(std::string nickname);
 		Client*						findClient(std::string hostmask);
+		Client*						findClientByNick(std::string nickname);
 		Client*						findOperator(std::string hostmask);
 		void						removeUser(Client& client, string reason);
 		bool						isOperator(Client& client);
+		bool						isInvited(Client& client);
 		void						_bcName(Client& client, std::string prefix);
 		void						_bcEndName();
 		

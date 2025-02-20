@@ -2,31 +2,31 @@
 
 string CurrentDate() 
 {
-    std::time_t now = std::time(0);
-    std::tm* now_tm = std::localtime(&now);
+	std::time_t now = std::time(0);
+	std::tm* now_tm = std::localtime(&now);
 
-    std::ostringstream date_stream;
-    date_stream << (now_tm->tm_year + 1900) << "-"
-                << std::setw(2) << std::setfill('0') << (now_tm->tm_mon + 1) << "-"
-                << std::setw(2) << std::setfill('0') << now_tm->tm_mday;
-    return date_stream.str();
+	std::ostringstream date_stream;
+	date_stream << (now_tm->tm_year + 1900) << "-"
+				<< std::setw(2) << std::setfill('0') << (now_tm->tm_mon + 1) << "-"
+				<< std::setw(2) << std::setfill('0') << now_tm->tm_mday;
+	return date_stream.str();
 }
 
 string CurrentTime() 
 {
-    std::time_t now = std::time(0);
-    std::tm* now_tm = std::localtime(&now);
+	std::time_t now = std::time(0);
+	std::tm* now_tm = std::localtime(&now);
 
-    std::ostringstream time_stream;
-    time_stream << std::setw(2) << std::setfill('0') << now_tm->tm_hour << ":"
-                << std::setw(2) << std::setfill('0') << now_tm->tm_min << ":"
-                << std::setw(2) << std::setfill('0') << now_tm->tm_sec;
-    return time_stream.str();
+	std::ostringstream time_stream;
+	time_stream << std::setw(2) << std::setfill('0') << now_tm->tm_hour << ":"
+				<< std::setw(2) << std::setfill('0') << now_tm->tm_min << ":"
+				<< std::setw(2) << std::setfill('0') << now_tm->tm_sec;
+	return time_stream.str();
 }
 
 bool checkValidChars(const std::string& str, const std::string& charset)
 {
-    return !(str.find_first_not_of(charset) != std::string::npos);
+	return !(str.find_first_not_of(charset) != std::string::npos);
 }
 
 string strUpper(std::string str)
@@ -88,19 +88,19 @@ void remove_consecutives(string &str, char to_remove)
 
 std::vector<string> split(string str, string delim)
 {
-    std::vector<string> ret;
-    size_t start = 0;
-    size_t end = 0;
+	std::vector<string> ret;
+	size_t start = 0;
+	size_t end = 0;
 
-    while ((end = str.find(delim, start)) != string::npos) 
+	while ((end = str.find(delim, start)) != string::npos) 
 	{
-        if (end != start) 
-            ret.push_back(str.substr(start, end - start));
-        start = end + delim.length();
-    }
-    if (start < str.size())
-        ret.push_back(str.substr(start));
-    return ret;
+		if (end != start) 
+			ret.push_back(str.substr(start, end - start));
+		start = end + delim.length();
+	}
+	if (start < str.size())
+		ret.push_back(str.substr(start));
+	return ret;
 }
 
 string join_strings(std::vector<string> vec)
@@ -125,14 +125,14 @@ string join_strings(std::vector<string> vec, int start_i)
 
 string readFile(const string& filePath) 
 {
-    std::ifstream file(filePath.c_str());
-    if (!file.is_open()) {
-        throw std::runtime_error("Could not open file");
-    }
+	std::ifstream file(filePath.c_str());
+	if (!file.is_open()) {
+		return "whatever man...";
+	}
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	return buffer.str();
 }
 
 bool	flagExists(string str, char c)

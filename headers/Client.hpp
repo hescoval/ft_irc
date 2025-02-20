@@ -22,6 +22,7 @@ class Client
         bool    _USERUsed;
 
     public:
+		string	_buffer;
         Client(string hostname, uint16_t port, int fd);
         ~Client();
         bool    getRegistered() const;

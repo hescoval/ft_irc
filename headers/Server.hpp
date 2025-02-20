@@ -65,6 +65,7 @@ class Server
         void		disconnect(int fd);
         void		handleCMD(string message, int fd);
         void		initializeFunctions();
+        Client*     getClientByNick(string nick);
         string		getCreationDate() const;
         string		getCreationTime() const;
         void		setCreationDate(const string str);
@@ -94,6 +95,11 @@ class Server
 		void		MODE(Command input, int fd);
 		void		WHO(Command input, int fd);
 		void        PART(Command input, int fd);
+		void        KICK(Command input, int fd);
+        void        INVITE(Command input, int fd);
+		void        PING(Command input, int fd);
+		void        MOTD(Command input, int fd);
+
 		
     public:
 		Server(string port, string password);

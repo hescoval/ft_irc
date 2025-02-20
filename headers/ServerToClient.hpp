@@ -23,6 +23,8 @@
 #define ERR_NOPRIVILEGES(nickname)							(CLIENT_RESPONSE(string("481"), nickname) + string("Permission Denied- You're not an IRC operator"))
 #define ERR_CHANOPRIVSNEEDED(nickname, channel)				(CLCHAN_RESPONSE(string("482"), nickname, channel) + string("You're not channel operator"))
 #define ERR_COMMANDNOTFND(command, nickname)				(CLIENT_RESPONSE(string("987"), nickname) + command + string(" - Command not found"))
+#define	ERR_USERNOTFOUND(nickname, target)					(CLEXTR_RESPONSE(string("981"), nickname, target) + string("No such nick/channel."))
+#define ERR_USERONCHANNEL(hostmask, target, channel)		(CLEXCH_RESPONSE(string("443"), hostmask, target, channel) + string("is already on channel."))
 
 //Welcome Messages
 #define RPL_WELCOME(hostmask, nickname)						(CLIENT_RESPONSE(string("001"), nickname) + string("Welcome to the ") + SERVER_NAME + string(" Network, ") + hostmask + string("!"))
@@ -63,16 +65,26 @@
 #define PARTRPL(hostmask, channel, reason)					(CLIENT_COMMAND(hostmask, string("PART"), channel) + string(" ") + reason)
 
 //KICK
-#define KICKRPL(hostmask, channel, target)					(CLIENT_COMMAND(hostmask, string("KICK"), channel) + target)
+#define KICKRPL(hostmask, channel, target, reason)			(CLIENT_COMMAND(hostmask, string("KICK"), channel) + string(" ") + target + string(" :") + reason)
+#define ERR_USERNOTINCHANNEL(nickname, target, channel)		(CLEXCH_RESPONSE(string("441"), nickname, target, channel) + string("They aren't on that channel."))
 
 //INVITE
-#define INVITERPL(hostmask, channel, target, modes, parameters)	(CLIENT_COMMAND(hostmask, string("INVITE"), channel) + target + string(" ") + modes + string(" ") + parameters)
+#define RPL_INVITING(hostmask, channel, target)				(CLIENT_COMMAND(hostmask, string("INVITE"), channel) + string(" ") + target)
+#define INVITERPL(issuer, target, channel)					(CLIENT_COMMAND(issuer, string("INVITE"), target) + string(" ") + channel)
 
 //MODE
 #define MODERPL(hostmask, target, flag)						(CLIENT_COMMAND(hostmask, string("MODE"), target) + flag)
 #define RPL_CHANNELMODEIS(nickname, channel, modes, args)	(CLCHAN_RESPONSE(string("324"), nickname, channel) + string(" ") + modes + string(" ") + args)
 #define RPL_CREATIONTIME(nickname, channel, creationtime)	(CLCHAN_RESPONSE(string("329"), nickname, channel) + string(" ") + creationtime)
 #define RPL_UMODEUNKOWNFLAG(nickname)						(CLIENT_RESPONSE(string("501"), nickname) + string("Unknown MODE flag"))
+
+//MOTD
+#define RPL_MOTDSTART(hostmask)						(CLIENT_RESPONSE(string("375"), hostmask) + string(" :- ") + SERVER_NAME + string(" Message of the Day - "))
+#define RPL_MOTD(hostmask, line)					(CLIENT_RESPONSE(string("372"), hostmask) + string(" :") + line)
+#define RPL_ENDOFMOTD(hostmask)						(CLIENT_RESPONSE(string("376"), hostmask) + string("End of /MOTD command."))
+
+//PONG
+#define PONG(token)									(SERVER_NAMERPL + string(" PONG ") + SERVER_NAME + " " + token)
 
 //WHO
 #define WHORPL(hostmask, target)							(CLIENT_COMMAND(hostmask, string("WHO"), target))
