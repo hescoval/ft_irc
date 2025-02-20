@@ -11,10 +11,12 @@ class Command
         std::vector<string>  errors;
 
     public:
-        string  command;
-        std::vector<string> args;
-        std::vector<char> modes_to_add;
-        std::vector<char> modes_to_remove;
+        string 								command;
+        std::vector<string>					args;
+		std::map<int, std::string>			flags;
+		std::map<std::string, std::string>	flagArgs;
+		string								plus;
+		string								minus;
 
         Command(string input);
         ~Command();

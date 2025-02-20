@@ -16,6 +16,7 @@
 #include <ctime>
 #include <iomanip>
 #include <deque>
+#include <algorithm>
 
 /*
 	The using keyword is only forbidden if you use it for entire namespaces
@@ -57,18 +58,20 @@ using std::endl;
 # define BRIGHT_CYAN	"\e[96m"
 # define BRIGHT_WHITE	"\e[97m"
 
-string join_strings(std::vector<string> vec);
-string join_strings(std::vector<string> vec, int start_i);
-void trim(std::string &test);
-void replace_whitespace(string &input);
-string strUpper(std::string str);
-void remove_consecutives(string &str, char to_remove);
-bool checkValidChars(const std::string& str, const std::string& charset);
-void strReplace(string &str, const string &from, const string &to);
-std::vector<string> split(string str, string delims);
-string CurrentDate();
-string CurrentTime();
-string readFile(const string& filePath);
+string				join_strings(std::vector<string> vec);
+string				join_strings(std::vector<string> vec, int start_i);
+void				trim(std::string &test);
+void				replace_whitespace(string &input);
+string				strUpper(std::string str);
+void				remove_consecutives(string &str, char to_remove);
+bool				checkValidChars(const std::string& str, const std::string& charset);
+void				strReplace(string &str, const string &from, const string &to);
+std::vector<string>	split(string str, string delims);
+string				CurrentDate();
+string				CurrentTime();
+string				readFile(const string& filePath);
+bool				flagExists(string str, char c);
+bool				uniqueChar(string str, char c);
 
 template<typename T>
 string toString(const T& value)

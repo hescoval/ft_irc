@@ -69,6 +69,13 @@ class Server
         string		getCreationTime() const;
         void		setCreationDate(const string str);
         void		setCreationTime(const string str);
+		void		getFlags(Command& input, string& plus, string& minus);
+		void		flagOrder(Command& input);
+		void		checkLimit(string& str);
+		void		checkKey(string& str);
+		void		parsePlus(string& plus);
+		void		parseMinus(string& minus);
+		bool		validFlag(char c);
 
         _fdIT		getUserPoll(int fd);
         Client&		getClient(int fd);

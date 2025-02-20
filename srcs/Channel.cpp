@@ -6,7 +6,7 @@
 /*   By: txisto-d <txisto-d@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/17 12:10:35 by txisto-d          #+#    #+#             */
-/*   Updated: 2025/02/18 14:22:07 by txisto-d         ###   ########.fr       */
+/*   Updated: 2025/02/20 13:35:06 by txisto-d         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,8 @@ Channel::Channel()
 	this->_topic = "";
 	this->_server = NULL;
 	this->_modes = 0;
-	this->_maxClient = 12;
+	this->_maxClient = 0;
+	this->_creationTime = CurrentDate() + string(" ") + CurrentTime();
 }
 
 Channel::Channel(std::string name, Server& server, Client& client)
@@ -30,9 +31,10 @@ Channel::Channel(std::string name, Server& server, Client& client)
 	this->_topic = "";
 	this->_server = &server;
 	this->_modes = 0;
-	this->_maxClient = 12;
+	this->_maxClient = 0;
 	this->_clientList.push_back(&client);
 	this->_operatorList.push_back(&client);
+	this->_creationTime = CurrentDate() + string(" ") + CurrentTime();
 }
 
 Channel::Channel(const Channel& obj)
@@ -45,6 +47,7 @@ Channel::Channel(const Channel& obj)
 	this->_maxClient = obj.getMaxClients();
 	this->_clientList = obj.getClients();
 	this->_operatorList = obj.getOperators();
+	this->_creationTime = obj.getTime();
 }
 
 Channel& Channel::operator=(const Channel& obj)
@@ -59,6 +62,7 @@ Channel& Channel::operator=(const Channel& obj)
 		this->_maxClient = obj.getMaxClients();
 		this->_clientList = obj.getClients();
 		this->_operatorList = obj.getOperators();
+		this->_creationTime = obj.getTime();
 	}
 	return (*this);
 }
@@ -99,11 +103,73 @@ void	Channel::invite(Client& client, std::string target)
 	(void) target;
 }
 
-void	Channel::changeModes(Client& client, unsigned char mode)
+void	Channel::changeModes(Client& client, Command& input)
 {
 	(void) client;
-	(void) mode;
+	unsigned char	mode = 0;
+	std::map<int, string>::iterator begin = input.flags.begin();
+	std::map<int, string>::iterator end = input.flags.end();
+	while (begin != end)
+	{
+		if ((*begin).second == "i" && input.plus.find('i') == string::npos)
+			this->_modes |= MODE_INVITEONLY;
+		else if ((*begin).second == "i" && input.minus.find('i')  == string::npos)
+			this->_modes &= ~MODE_INVITEONLY;
+		if ((*begin).second == "t"  && input.plus.find('t') == string::npos)
+			this->_modes |= MODE_TOPIC;
+		else if ((*begin).second == "t" && input.minus.find('t')  == string::npos)
+			this->_modes &= ~MODE_TOPIC;
+		if ((*begin).second == "l"  && input.plus.find('l') == string::npos)
+		{
+			this->_maxClient = std::strtol(input.flagArgs["l"].c_str(), NULL, 10);
+			this->_modes |= MODE_LIMIT;
+		}
+		else if ((*begin).second == "l" && input.minus.find('l') == string::npos)
+		{
+			this->_maxClient = 0;
+			this->_modes &= ~MODE_LIMIT;
+		}
+		if ((*begin).second == "k" && input.plus.find('k') == string::npos)
+		{
+			this->_password = input.flagArgs["k"];
+			this->_modes |= MODE_KEY;
+		}
+		else if ((*begin).second == "k" && input.minus.find('k') == string::npos)
+		{
+			this->_password = "";
+			this->_modes &= ~MODE_KEY;
+		}
+		if ((*begin).second == "o"  && input.plus.find('k') == string::npos)
+		{
+			Client* cl = (this->findClientByNick(input.flagArgs["o"]));
+			if (!cl)
+				this->_server->ServerToUser(ERR_NOTONCHANNEL(client.getNickname(), this->_name), client.getFd());
+			else if (!this->isOperator(*cl))
+				this->addOperator(*cl);
+		}
+		else if ((*begin).second == "o"  && input.minus.find('k') == string::npos)
+		{
+			Client* cl = (this->findClientByNick(input.flagArgs["o"]));
+			if (!cl)
+				this->_server->ServerToUser(ERR_NOTONCHANNEL(client.getNickname(), this->_name), client.getFd());
+			else if (this->isOperator(*cl))
+				this->_operatorList.erase(find(this->_operatorList.begin(), this->_operatorList.end(), cl));
+		}
+		begin++;
+	}
+	string	all_args = "";
+	int		arg_size = input.args.size();
+	int		i = 0;
+	while (i < arg_size)
+	{
+		all_args+= input.args[i];
+		all_args += string(" ");
+		i++;
+	}
+	this->_server->ServerToUser(SERVER_NAMERPL + string(" 324 ") + client.getNickname() + string(" ") + all_args, client.getFd());
 }
+
+
 
 std::string	Channel::getName()  const
 {
@@ -130,6 +196,26 @@ unsigned char	Channel::getModes()  const
 	return (this->_modes);
 }
 
+string	Channel::formattedModes()
+{
+	string	str= "";
+	if (this->_modes & MODE_INVITEONLY)
+		str += "i";
+	if (this->_modes & MODE_LIMIT)
+		str += "l";
+	if (this->_modes & MODE_KEY)
+		str += "k";
+	if (this->_modes & MODE_TOPIC)
+		str += "t";
+	return (str);
+}
+
+void	Channel::addOperator(Client& client)
+{
+	if (this->isOperator(client))
+		this->_operatorList.push_back(&client);
+}
+
 const std::deque<Client*>&	Channel::getClients()  const
 {
 	return (this->_clientList);
@@ -143,6 +229,11 @@ const std::deque<Client*>&	Channel::getOperators()  const
 size_t	Channel::getMaxClients()  const
 {
 	return (this->_maxClient);
+}
+
+string	Channel::getTime() const
+{
+	return (this->_creationTime);
 }
 
 void	Channel::removeUser(Client& client, string reason)
@@ -179,7 +270,23 @@ void	Channel::removeUser(Client& client, string reason)
 
 }
 
-Client*				Channel::findClient(std::string hostmask)
+Client*				Channel::findClientByNick(std::string nickname)
+{
+	std::deque<Client*>::iterator begin;
+	std::deque<Client*>::iterator end;
+	
+	begin = this->_clientList.begin();
+	end = this->_clientList.end();
+	while (begin < end)
+	{
+		if ((*begin)->getNickname() == nickname)
+			return (*begin);
+		begin++;
+	}
+	return (NULL);
+}
+
+Client*	Channel::findClient(std::string hostmask)
 {
 	std::deque<Client*>::iterator begin;
 	std::deque<Client*>::iterator end;
@@ -195,7 +302,7 @@ Client*				Channel::findClient(std::string hostmask)
 	return (NULL);
 }
 
-Client*				Channel::findOperator(std::string hostmask)
+Client*	Channel::findOperator(std::string hostmask)
 {
 	std::deque<Client*>::iterator begin;
 	std::deque<Client*>::iterator end;

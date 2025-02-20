@@ -161,11 +161,11 @@ void Server::JOIN(Command input, int fd)
 		const std::deque<Client*>& clientList = channel->getClients();
 		if (channel->findClient(client.getHostmask()))
 			return ServerToUser(ERR_ALREADYONCHANNEL(client.getNickname(), channel->getName()), fd);
-		else if (channel->getModes() == 1)
+		else if (channel->getModes() & MODE_INVITEONLY && channel->getINVITE())
 			return ServerToUser(ERR_INVITEONLYCHAN(client.getNickname(), channel->getName()), fd);
-		else if (channel->getModes() == 2)
+		else if (channel->getModes() & MODE_KEY && (input.args.size() != 2 || input.args[1] != channel->getPassword()))
 			return ServerToUser(ERR_BADCHANNELKEY(client.getNickname(), channel->getName()), fd);
-		else if (clientList.size() == channel->getMaxClients())
+		else if (channel->getModes() & MODE_LIMIT && clientList.size() == channel->getMaxClients())
 			return ServerToUser(ERR_CHANNELISFULL(client.getNickname(), channel->getName()), fd);
 		else
 			channel->join(client);
@@ -202,7 +202,7 @@ void	Server::TOPIC(Command input, int fd)
 	{
 		if (input.getFullCommand().find(':') == string::npos)
 			return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
-		if (!channel->findOperator(client.getHostmask()))
+		if ((channel->getModes() & MODE_TOPIC == MODE_TOPIC) && !channel->findOperator(client.getHostmask()))
 			return ServerToUser(ERR_NOPRIVILEGES(client.getNickname()), fd);
 		channel->topic(client, input.getFullCommand());
 	}
@@ -250,11 +250,193 @@ void	Server::MODE(Command input, int fd)
 {
 	Client		&client = getClient(fd);
 	Channel		*channel = getChannel(input.args[0]);
+	string		plus = "";
+	string		minus = "";
 
 	if (!channel)
 		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), input.args[0]), fd);
+	if (input.args.size() == 1)
+	{
+		string				parameters = "";
+		std::stringstream	ss;
+		ss.str(parameters);
+		if (channel->getPassword() != "")
+			ss << channel->getPassword() << " ";
+		if (channel->getMaxClients() != 0)
+			ss << channel->getMaxClients();
+		getline(ss, parameters);
+		ServerToUser(RPL_CHANNELMODEIS(client.getNickname(), channel->getName(), channel->formattedModes(), parameters), fd);
+		return ServerToUser(RPL_CREATIONTIME(client.getNickname(), channel->getName(), channel->getTime()), fd);
+	}
+	else if (!channel->isOperator(client))
+		return ServerToUser(ERR_CHANOPRIVSNEEDED(client.getNickname(), channel->getName()), 2);
+	try
+	{
+		getFlags(input, plus, minus);
+	}
+	catch(int i)
+	{
+		(void) i;
+		return ServerToUser(RPL_UMODEUNKOWNFLAG(client.getNickname()), fd);
+	}
+	if ((flagExists(plus, 'k') || flagExists(plus, 'o') || flagExists(plus, 'l')) && input.args.size() < 3)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+	if (((flagExists(plus, 'k') && flagExists(plus, 'o'))
+		|| (flagExists(plus, 'k') && flagExists(plus, 'l'))
+		|| (flagExists(plus, 'o') && flagExists(plus, 'l'))) && input.args.size() < 4)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+	if (flagExists(plus, 'k') && flagExists(plus, 'o') && flagExists(plus, 'l') && input.args.size() < 5)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+	
+	try
+	{
+		flagOrder(input);
+	}
+	catch (int e)
+	{
+		(void) e;
+		return ServerToUser(RPL_UMODEUNKOWNFLAG(client.getNickname()), fd);
+	}
+	input.plus = plus;
+	input.minus = minus;
+	channel->changeModes(client, input);
 }
 
+void	Server::getFlags(Command& input, string& plus, string& minus)
+{
+	string				aux;
+	std::stringstream	ss;
+
+	aux = input.args[1];
+	if (!uniqueChar(aux, 'i') || !uniqueChar(aux, 'o') || !uniqueChar(aux, 'k') || !uniqueChar(aux, 'l') || !uniqueChar(aux, 't') || !uniqueChar(aux, '+') || !uniqueChar(aux, '-'))
+		throw (-1);
+	ss.str(input.args[1]);
+	getline(ss, aux, '+');
+	getline(ss, plus);
+	try
+	{
+		parsePlus(plus);
+	}
+	catch(int i)
+	{
+		__throw_exception_again;
+	}
+	ss.clear();
+	ss.str(input.args[1]);
+	getline(ss, aux, '-');
+	getline(ss, minus);
+	try
+	{
+		parseMinus(minus);
+	}
+	catch(int i)
+	{
+		__throw_exception_again;
+	}
+	aux = input.args[1];
+}
+
+void	Server::flagOrder(Command& input)
+{
+	string str = input.args[1];
+	int	i = 0;
+	int j = 0;
+
+	while (str[i])
+	{
+		if (validFlag(str[i]))
+		{
+			input.flags[i] = str[i];
+			if (str[i] == 'l')
+				checkLimit(input.args[2 + j]);
+			if (str[i] == 'k')
+				checkKey(input.args[2 + j]);
+			if (str[i] == 'l' || str[i] == 'k' || str[i] == 'o')
+				input.flagArgs[string(&str[i])] = input.args[2 + j++];
+		}
+		i++;
+	}
+}
+
+void	Server::checkLimit(string& str)
+{
+	int	i;
+
+	i = 0;
+	while (str[i])
+	{
+		if (!std::isdigit(str[i]))
+			throw (-1);
+		i++;
+	}
+	if (strtol(str.c_str(), NULL, 10) > std::numeric_limits<int>::max())
+		throw(-1);
+}
+
+void	Server::checkKey(string& str)
+{
+	int i = 0;
+	while (str[i])
+	{
+		if (std::isblank(str[i]))
+			throw (-1);
+		if (str.size() < 4)
+			throw (-1);
+	}
+}
+
+void	Server::parsePlus(string& plus)
+{
+	int					i = -1;
+	std::stringstream	ss;
+
+	ss.str(plus);
+	while (plus[++i])
+	{
+		if (!validFlag(plus[i]))
+		{
+			if (plus[i] != '-')
+				throw (-1);
+			else
+			{
+				getline(ss, plus, '-');
+				return ;
+			}
+		}
+	}
+	getline(ss, plus);
+	return ;
+}
+
+void	Server::parseMinus(string& minus)
+{
+	int					i = -1;
+	std::stringstream	ss;
+
+	ss.str(minus);
+	while (minus[++i])
+	{
+		if (!validFlag(minus[i]))
+		{
+			if (minus[i] != '+')
+				throw (-1);
+			else
+			{
+				getline(ss, minus, '+');
+				return ;
+			}
+		}
+	}
+	getline(ss, minus);
+	return ;
+}
+
+bool	Server::validFlag(char c)
+{
+	if (c == 'i' || c == 't' || c == 'k' || c == 'o' || c == 'l')
+		return (true);
+	return (false);
+}
 void	Server::WHO(Command input, int fd)
 {
 	if (input.args.empty())

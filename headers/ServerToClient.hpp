@@ -3,11 +3,11 @@
 #include "Server.hpp"
 
 //STANDARD RESPONSE FORMAT
-#define SERVER_RESPONSE(numeric)							(SERVER_NAMERPL + string(" ") + numeric + string(" : "))
-#define CLIENT_RESPONSE(numeric, nickname)					(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" : "))
-#define CLCHAN_RESPONSE(numeric, nickname, channel)			(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" ") + channel + string(" : "))
-#define CLEXTR_RESPONSE(numeric, nickname, extra)			(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" ") + extra + string(" : "))
-#define CLEXCH_RESPONSE(numeric, nickname, extra, channel)	(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" ") + extra + string(" ") + channel + string(" : "))
+#define SERVER_RESPONSE(numeric)							(SERVER_NAMERPL + string(" ") + numeric + string(" :"))
+#define CLIENT_RESPONSE(numeric, nickname)					(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" :"))
+#define CLCHAN_RESPONSE(numeric, nickname, channel)			(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" ") + channel + string(" :"))
+#define CLEXTR_RESPONSE(numeric, nickname, extra)			(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" ") + extra + string(" :"))
+#define CLEXCH_RESPONSE(numeric, nickname, extra, channel)	(SERVER_NAMERPL + string(" ") + numeric + string(" ") + nickname + string(" ") + extra + string(" ") + channel + string(" :"))
 
 //USER COMMAND AND MESSAGE
 
@@ -17,11 +17,12 @@
 //ERRORS
 #define ERR_NOSUCHCHANNEL(nickname, channel)				(CLCHAN_RESPONSE(string("403"), nickname, channel) + string("No such channel"))
 #define ERR_NOTONCHANNEL(nickname, channel)					(CLCHAN_RESPONSE(string("442"), nickname, channel) + string("You're not on that channel"))
-#define ERR_NEEDMOREPARAMS(command, nickname)				(CLIENT_RESPONSE(string("461"), nickname) + command + string(" - Not enough parameters."))
-#define ERR_ALREADYREGISTERED(nickname)						(CLIENT_RESPONSE(string("462"), nickname) + string("Already Registered."))
-#define ERR_NEEDPWD(nickname)								(CLIENT_RESPONSE(string("463"), nickname) + string("Please use PASS before attempting any other command."))
+#define ERR_NEEDMOREPARAMS(command, nickname)				(CLIENT_RESPONSE(string("461"), nickname) + command + string(" - Not enough parameters"))
+#define ERR_ALREADYREGISTERED(nickname)						(CLIENT_RESPONSE(string("462"), nickname) + string("Already Registered"))
+#define ERR_NEEDPWD(nickname)								(CLIENT_RESPONSE(string("463"), nickname) + string("Please use PASS before attempting any other command"))
 #define ERR_NOPRIVILEGES(nickname)							(CLIENT_RESPONSE(string("481"), nickname) + string("Permission Denied- You're not an IRC operator"))
-#define ERR_COMMANDNOTFND(command, nickname)				(CLIENT_RESPONSE(string("987"), nickname) + command + string(" - Command not found."))
+#define ERR_CHANOPRIVSNEEDED(nickname, channel)				(CLCHAN_RESPONSE(string("482"), nickname, channel) + string("You're not channel operator"))
+#define ERR_COMMANDNOTFND(command, nickname)				(CLIENT_RESPONSE(string("987"), nickname) + command + string(" - Command not found"))
 
 //Welcome Messages
 #define RPL_WELCOME(hostmask, nickname)						(CLIENT_RESPONSE(string("001"), nickname) + string("Welcome to the ") + SERVER_NAME + string(" Network, ") + hostmask + string("!"))
@@ -65,14 +66,22 @@
 #define KICKRPL(hostmask, channel, target)					(CLIENT_COMMAND(hostmask, string("KICK"), channel) + target)
 
 //INVITE
-#define INVITERPL(hostmask, channel, target)				(CLIENT_COMMAND(hostmask, string("INVITE"), channel) + target)
+#define INVITERPL(hostmask, channel, target, modes, parameters)	(CLIENT_COMMAND(hostmask, string("INVITE"), channel) + target + string(" ") + modes + string(" ") + parameters)
 
 //MODE
 #define MODERPL(hostmask, target, flag)						(CLIENT_COMMAND(hostmask, string("MODE"), target) + flag)
-
+#define RPL_CHANNELMODEIS(nickname, channel, modes, args)	(CLCHAN_RESPONSE(string("324"), nickname, channel) + string(" ") + modes + string(" ") + args)
+#define RPL_CREATIONTIME(nickname, channel, creationtime)	(CLCHAN_RESPONSE(string("329"), nickname, channel) + string(" ") + creationtime)
+#define RPL_UMODEUNKOWNFLAG(nickname)						(CLIENT_RESPONSE(string("501"), nickname) + string("Unknown MODE flag"))
 
 //WHO
 #define WHORPL(hostmask, target)							(CLIENT_COMMAND(hostmask, string("WHO"), target))
 #define RPL_WHOREPLY(cli_nickname, channel, t_user, t_host, t_server, t_nick, t_status, t_real) \
 															(CLCHAN_RESPONSE(string("352"), cli_nickname, channel) + t_user + string(" ") + t_host + string(" ") + t_server + string(" ") + t_nick + string(" ") + t_status + string(" :0 ") + t_real)
 #define RPL_ENDOFWHO(nickname, channel)						(CLCHAN_RESPONSE(string("315"), nickname, channel) + string("End of WHO list"))
+
+
+#define MODE_INVITEONLY	0b0001
+#define MODE_LIMIT		0b0010
+#define MODE_KEY		0b0100
+#define MODE_TOPIC		0b1000

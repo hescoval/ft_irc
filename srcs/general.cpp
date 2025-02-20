@@ -134,3 +134,15 @@ string readFile(const string& filePath)
     buffer << file.rdbuf();
     return buffer.str();
 }
+
+bool	flagExists(string str, char c)
+{
+	return (str.find(c) != string::npos);
+}
+
+bool	uniqueChar(string str, char c)
+{
+	if (std::count(str.begin(), str.end(), c) > 1)
+		return (false);
+	return (true);
+}
