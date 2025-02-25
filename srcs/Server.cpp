@@ -10,6 +10,8 @@ Server::Server(string port, string password) : _Clients()
 	if(atoi(port.c_str()) != SERVER_PORT || port.length() != 4)
 		throw std::runtime_error("Incorrect port number, try " + toString(SERVER_PORT));
 
+	if (this->_invalidPass(password))
+		throw std::runtime_error("Invalid pass: " + string(password) + "\nPassword must be at least 8-characters long and only alphanumeric characters and specials \"!@#$%&*?\" are accepted.");
 	this->_password = password;
 	this->_clientMax = MAX_CLIENTS;
 	this->_name = SERVER_NAME;
@@ -17,6 +19,20 @@ Server::Server(string port, string password) : _Clients()
 	initializeFunctions();
 
 	setupSocket();
+}
+
+bool Server::_invalidPass(const std::string& password)
+{
+	std::string valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*?";
+
+	if (password.size() < 8)
+		return (true);
+	for (size_t i = 0; i < password.size(); i++)
+	{
+		if (valid.find(password[i]) == std::string::npos)
+			return (true);
+	}
+	return (false);
 }
 
 void Server::setupSocket()
@@ -145,6 +161,15 @@ void Server::disconnect(int fd)
 	_clientIT it = _Clients.find(fd);
 	cout << "deleting client from hashset - " << it->second.getNickname() << endl;
 	inUseNicks.erase(it->second.getNickname());
+	std::map<std::string, Channel>::iterator	begin = this->_channels.begin();
+	std::map<std::string, Channel>::iterator	end = this->_channels.end();
+
+	while (begin != end)
+	{
+		if (begin->second.findClientByNick(it->second.getNickname()))
+			begin->second.removeUser(it->second, "");
+		begin++;
+	}
 	if (it != _Clients.end())
 	{
 		cout << "Deleting client " << fd << endl;
@@ -199,7 +224,7 @@ void Server::checkClientRequest(int _fd)
 		if(bytes_read == 0)
 		{
 			disconnect(_fd);
-			return;
+			return ;
 		}
 
 		it->second._buffer = message;
@@ -208,6 +233,9 @@ void Server::checkClientRequest(int _fd)
 		std::vector<string> splits = split(it->second._buffer, EOM);
 		for(size_t i = 0; i < splits.size(); i++)
 			handleCMD(splits[i], _fd);
+		it = _Clients.find(_fd);
+		if (it == _Clients.end())
+			return ;
 		it->second._buffer = "";
 	}
 	catch (const std::exception &e)

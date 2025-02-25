@@ -77,7 +77,7 @@ class Server
 		void		parsePlus(string& plus);
 		void		parseMinus(string& minus);
 		bool		validFlag(char c);
-
+        bool        _invalidPass(const std::string& password);
         _fdIT		getUserPoll(int fd);
         Client&		getClient(int fd);
 		Channel*	getChannel(std::string name);

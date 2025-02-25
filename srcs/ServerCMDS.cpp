@@ -93,7 +93,7 @@ void Server::QUIT(Command input, int fd)
 
 void Server::NICK(Command input, int fd)
 {
-	string valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789[]{}\\|";
+	string valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	Client& client = getClient(fd);
 	string old_nick = client.getNickname();
 	string nick = join_strings(input.args);
@@ -140,6 +140,12 @@ void Server::PASS(Command input, int fd)
 	if(input.args.size() == 0)
 		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
 
+	if (fullpass != this->_password)
+	{
+		ServerToUser(ERR_PASSWDMISMATCH(client.getNickname()), fd);
+		disconnect(fd);
+		return ;
+	}
 	client.setPassword(fullpass);
 	client.setPASSUsed(true);
 	if(client.getRegistered())
@@ -150,7 +156,7 @@ void Server::PASS(Command input, int fd)
 void Server::USER(Command input, int fd)
 {
 	Client& client = getClient(fd);
-	string valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789[]{}\\|";
+	string valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 	if(client.getRegistered())
 		return ServerToUser(ERR_ALREADYREGISTERED(client.getNickname()), fd);
@@ -163,7 +169,7 @@ void Server::USER(Command input, int fd)
 	string realname  = split(input.args[3], ":")[0];
 
 	if(!checkValidChars(strUpper(username), valid) || !checkValidChars(strUpper(realname), valid))
-		return;
+		return ServerToUser(ERR_INVALIDUSER(client.getNickname()), fd);
 
 	client.setUSERUsed(true);
 	client.setUsername(username);
@@ -180,9 +186,10 @@ void Server::JOIN(Command input, int fd)
 	if (!client.getAuth())
 		return ServerToUser(ERR_NEEDPWD(client.getNickname()), fd);
 
-	if(input.args.size() < 1)
+	if (input.args.size() < 1)
 		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
-
+	if (input.args[0][0] != '#' || input.args[0].size() < 2)
+		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), string(input.args[0])), fd);
 	if (!this->_channels.count(input.args[0]))
 	{
 		channel = &this->addChannel(input.args[0], client);
@@ -267,7 +274,6 @@ void	Server::NAMES(Command input, int fd)
 	while (op_begin < op_end)
 	{
 		Client* op_member = *op_begin;
-		std::cout << std::endl << channel->getOperators().size() << std::endl << std::endl;
 		channel->_bcName(*op_member, "@");
 		op_begin++;
 	}
@@ -300,10 +306,10 @@ void	Server::MODE(Command input, int fd)
 		string				parameters = "";
 		std::stringstream	ss;
 		ss.str(parameters);
-		if (channel->getPassword() != "")
-			ss << channel->getPassword() << " ";
 		if (channel->getMaxClients() != 0)
-			ss << channel->getMaxClients();
+			ss << channel->getMaxClients() << " ";
+		if (channel->getPassword() != "")
+			ss << channel->getPassword();
 		getline(ss, parameters);
 		ServerToUser(RPL_CHANNELMODEIS(client.getNickname(), channel->getName(), channel->formattedModes(), parameters), fd);
 		return ServerToUser(RPL_CREATIONTIME(client.getNickname(), channel->getName(), channel->getTime()), fd);
@@ -390,15 +396,15 @@ void	Server::flagOrder(Command& input)
 			if (str[i] == 'l' && input.plus.find(str[i]) != string::npos)
 			{
 				checkLimit(input.args[2 + j]);
-				input.flagArgs[string(&str[i])] = input.args[2 + j++];
+				input.flagArgs["l"] = input.args[2 + j++];
 			}
 			else if (str[i] == 'k' && input.plus.find(str[i]) != string::npos)
 			{
 				checkKey(input.args[2 + j]);
-				input.flagArgs[string(&str[i])] = input.args[2 + j++];
+				input.flagArgs["k"] = input.args[2 + j++];
 			}
 			else if (str[i] == 'o')
-				input.flagArgs[string(&str[i])] = input.args[2 + j++];
+				input.flagArgs["o"] = input.args[2 + j++];
 		}
 		i++;
 	}
@@ -554,6 +560,8 @@ void Server::PART(Command input, int fd)
 		}
 
 		channel->removeUser(client, reason);
+		if (!channel->getClients().size())
+			this->_channels.erase(channel->getName());
 	}
 }
 
@@ -582,6 +590,8 @@ void	Server::KICK(Command input, int fd)
 	if(!target)
 		return ServerToUser(ERR_USERNOTINCHANNEL(client.getNickname(), input.args[1], channel->getName()), fd);
 	channel->kick(kicker, target->getNickname(), reason);
+	if (!channel->getClients().size())
+		this->_channels.erase(channel->getName());
 }
 
 void	Server::INVITE(Command Input, int fd)

@@ -21,7 +21,7 @@ RM = rm -rf
 
 #	====================	Flags      			====================
 
-W = -Wall -Wextra -Werror -std=c++98 -g
+W = -Wall -Wextra -Werror -std=c++98
 O = -c
 I = -I $(INC)
 WBLOCK = --no-print-directory

@@ -43,6 +43,7 @@
 
 //USER
 #define ERR_BADPROTOCOL(nickname)							(CLIENT_RESPONSE(string("986"), nickname) + string("Bad protocol ( [USER] 0 * [realname] )"))
+#define ERR_INVALIDUSER(nickname)							(CLIENT_RESPONSE(string("983"), nickname) + string("Invalid username. Only alphanumeric characters are acceptable."))
 
 //JOIN
 #define JOINRPL(hostmask, channel)							(CLIENT_COMMAND(hostmask, string("JOIN"), channel))
