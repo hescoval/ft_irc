@@ -52,6 +52,7 @@
 #define ERR_BADCHANNELKEY(nickname, channel)				(CLCHAN_RESPONSE(string("475"), nickname, channel) + string("Cannot join channel. (+k)"))
 #define ERR_INVALIDKEY(nickname, channel)					(CLCHAN_RESPONSE(string("525"), nickname, channel) + string("Key is not well-formed."))
 #define ERR_ALREADYONCHANNEL(nickname, channel)				(CLCHAN_RESPONSE(string("984"), nickname, channel) + string("Already on channel."))
+#define ERR_ERRONEUSCHANNAME(channel_name, target)			(CLEXTR_RESPONSE(string("976"), channel_name, target) + string("Erroneous Channel Name."))
 
 //TOPIC
 #define TOPICRPL(hostmask, channel, topic)					(CLIENT_COMMAND(hostmask, string("TOPIC"), channel) + string(" ") + topic)

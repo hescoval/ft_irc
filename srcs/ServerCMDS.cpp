@@ -93,10 +93,13 @@ void Server::QUIT(Command input, int fd)
 
 void Server::NICK(Command input, int fd)
 {
-	string valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	string valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789[]{}\\|";
 	Client& client = getClient(fd);
 	string old_nick = client.getNickname();
 	string nick = join_strings(input.args);
+
+	if(input.args.size() < 1)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
 
 	if(!checkValidChars(strUpper(nick), valid))
 		return ServerToUser(ERR_ERRONEUSNICKNAME(client.getNickname(), nick), fd);
@@ -188,15 +191,20 @@ void Server::JOIN(Command input, int fd)
 
 	if (input.args.size() < 1)
 		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
-	if (input.args[0][0] != '#' || input.args[0].size() < 2)
-		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), string(input.args[0])), fd);
-	if (!this->_channels.count(input.args[0]))
+
+	string channel_name = input.args[0];
+	if (channel_name[0] != '#' || channel_name.size() < 2)
+		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), string(channel_name)), fd);
+	if (!this->_channels.count(channel_name))
 	{
-		channel = &this->addChannel(input.args[0], client);
+		string valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#";
+		if(!checkValidChars(strUpper(channel_name), valid))
+			return ServerToUser(ERR_ERRONEUSCHANNAME(channel_name, client.getNickname()), fd);
+		channel = &this->addChannel(channel_name, client);
 	}
 	else
 	{
-		channel = this->getChannel(input.args[0]);
+		channel = this->getChannel(channel_name);
 		const std::deque<Client*>& clientList = channel->getClients();
 		if (channel->findClient(client.getHostmask()))
 			return ServerToUser(ERR_ALREADYONCHANNEL(client.getNickname(), channel->getName()), fd);
@@ -209,7 +217,7 @@ void Server::JOIN(Command input, int fd)
 		else
 			channel->join(client);
 	}
-	ServerToUser(JOINRPL(client.getHostmask(), input.args[0]), fd);
+	ServerToUser(JOINRPL(client.getHostmask(), channel_name), fd);
 	if (channel->getTopic() == "")
 		ServerToUser(RPL_NOTOPIC(client.getNickname(), channel->getName()), fd);
 	else
@@ -295,12 +303,16 @@ void	Server::NAMES(Command input, int fd)
 void	Server::MODE(Command input, int fd)
 {
 	Client		&client = getClient(fd);
+	if(input.args.size() < 1)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
 	Channel		*channel = getChannel(input.args[0]);
 	string		plus = "";
 	string		minus = "";
 
 	if (!channel)
 		return ServerToUser(ERR_NOSUCHCHANNEL(client.getNickname(), input.args[0]), fd);
+	if (!channel->findClientByNick(client.getNickname()))
+		return ServerToUser(ERR_NOTONCHANNEL(client.getNickname(), channel->getName()), fd);
 	if (input.args.size() == 1)
 	{
 		string				parameters = "";
@@ -485,6 +497,7 @@ void	Server::parseMinus(string& minus)
 	return ;
 }
 
+
 bool	Server::validFlag(char c)
 {
 	if (c == 'i' || c == 't' || c == 'k' || c == 'o' || c == 'l')
@@ -493,9 +506,11 @@ bool	Server::validFlag(char c)
 }
 void	Server::WHO(Command input, int fd)
 {
-	if (input.args.empty())
-		return ;
 	Client		&client = getClient(fd);
+
+	if(input.args.size() < 1)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+
 	Channel		*channel = getChannel(input.args[0]);
 
 	if (!channel)
@@ -569,6 +584,10 @@ void	Server::KICK(Command input, int fd)
 {
 	Client &client = getClient(fd);
 	string kicker = client.getHostmask();
+
+	if(input.args.size() < 1)
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
+
 	Channel *channel = getChannel(input.args[0]);
 	string reason = join_strings(input.args, 2);
 	if(reason == "")
@@ -635,6 +654,8 @@ void		Server::PRIVMSG(Command input, int fd)
 	
 	ss.str(input.getFullCommand());
 	getline(ss, message, ':');
+	if (message == input.getFullCommand())
+		return ServerToUser(ERR_NEEDMOREPARAMS(input.command, client.getNickname()), fd);
 	getline(ss, message);
 	
 	if (input.args[0][0] == '#')
